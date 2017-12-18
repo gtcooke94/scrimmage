@@ -76,11 +76,16 @@ ArduPilot::~ArduPilot()
 
 void ArduPilot::init(std::map<std::string,std::string> &params)
 {
-    double initial_speed = sc::get<double>("initial_speed", params, 21);
+    multirotor_ = std::dynamic_pointer_cast<sc::motion::Multirotor>(parent_->motion());
+    if (multirotor_ == nullptr) {
+        cout << "WARNING: MultirotorTests can't control the motion "
+             << "model for this entity." << endl;
+    }
 
-    desired_state_->vel() = Eigen::Vector3d::UnitX()*initial_speed;
-    desired_state_->quat().set(0,0,state_->quat().yaw());
-    desired_state_->pos() = Eigen::Vector3d::UnitZ()*state_->pos()(2);
+    desired_rotor_state_ = std::make_shared<sc::motion::MultirotorState>();
+    desired_rotor_state_->set_input_type(sc::motion::MultirotorState::InputType::PWM);
+    desired_rotor_state_->prop_input().resize(multirotor_->rotors().size());
+    desired_state_ = desired_rotor_state_;
 }
 
 //runs as the Plugin closes
@@ -95,13 +100,13 @@ void ArduPilot::close(double t)
 bool ArduPilot::step_autonomy(double t, double dt)
 {
 
-    //std::cout << "state pos 0: " << state_->pos()(0) << std::endl; //x 
+    //std::cout << "state pos 0: " << state_->pos()(0) << std::endl; //x
     //std::cout << "state pos 1: " << state_->pos()(1) << std::endl; //y
     //std::cout << "state pos 2: " << state_->pos()(2) << std::endl; //z
 /*
-    std::cout << "state vel 0: " << state_->vel()(0) << std::endl; 
-    std::cout << "state vel 1: " << state_->vel()(1) << std::endl; 
-    std::cout << "state vel 2: " << state_->vel()(2) << std::endl; 
+    std::cout << "state vel 0: " << state_->vel()(0) << std::endl;
+    std::cout << "state vel 1: " << state_->vel()(1) << std::endl;
+    std::cout << "state vel 2: " << state_->vel()(2) << std::endl;
 
     std::cout << "state roll: " << Angles::rad2deg(state_->quat().roll()) << std::endl;
     std::cout << "state pitch: " << Angles::rad2deg(state_->quat().pitch()) << std::endl;
@@ -116,10 +121,18 @@ bool ArduPilot::step_autonomy(double t, double dt)
 
     //desired_state_->pos()(2) = 0.0f; // rudder   (z-axis rotation) (-1 to 1)
     //desired_state_->vel()(0) = 0.4f;
-    
+
     previous_step_time = t;
 
-    return true;    
+    servo_pkt_mutex_.lock();
+    for (int i = 0; i < desired_rotor_state_->prop_input().size(); i++) {
+        desired_rotor_state_->prop_input()(i) = servo_pkt_.servos[i];
+    }
+    servo_pkt_mutex_.unlock();
+
+    desired_state_ = desired_rotor_state_;
+
+    return true;
 }
 
 void ArduPilot::ardu_listener() {
@@ -134,7 +147,7 @@ void ArduPilot::ardu_listener() {
     std::string debug_log = parent_->mp()->log_dir() + "/ardu_error.txt";
     std::ofstream dbg_strm;
     dbg_strm.open(debug_log, std::ofstream::out);
-    dbg_strm << "SCRIMMAGE Ardupilot plugin error log.\n";    
+    dbg_strm << "SCRIMMAGE Ardupilot plugin error log.\n";
 
     //listen for control inputs from ardupilot
     while (do_listen_to_ardu) {
@@ -153,11 +166,15 @@ void ArduPilot::ardu_listener() {
             continue; //ignore packets without sufficient data
         }
 
+        servo_pkt_mutex_.lock();
+        servo_pkt_ = pkt;
+        servo_pkt_mutex_.unlock();
+
         //TODO: delte lines
         //dbg_strm << "Got a packet with " << reply_len << " bytes: \n";
         //dbg_strm << pkt.servos[0] << endl;
         //cout << pkt.servos[0] << endl;
-        
+
         //TODO: endian handling
         //
         //TODO: send servo inputs just received to appropriate SCRIMMAGE model
@@ -176,12 +193,12 @@ void ArduPilot::ardu_sender() {
     //forward aircraft state to ArduPilot
     while (do_send_to_ardu) {
         fdm_packet fdm_pkt = {0}; //re-init every iteration to keep clean
-        
+
         //TODO: remaining data needs to get into fdm_packet to send to Ardu
         fdm_pkt.timestamp_us = uint64_t(previous_step_time * 1.0e6);
         fdm_pkt.latitude = 921.0;
-        
-        //TODO: endian handling.        
+
+        //TODO: endian handling.
         try {
             s.send_to(asio::buffer(&fdm_pkt, sizeof(fdm_packet)), endpoint);
         } catch (std::exception& e) {

@@ -1,5 +1,5 @@
 find_package(Asio QUIET)
-if (NOT Asio_FOUND) 
+if (NOT Asio_FOUND)
     message("WARNING: Boost asio not found, not building ArduPilot plugin.")
     return()
 endif()
@@ -22,17 +22,18 @@ add_definitions (
 
 include_directories(${Asio_INCLUDE_DIR})
 
-ADD_LIBRARY(${LIBRARY_NAME} SHARED 
+ADD_LIBRARY(${LIBRARY_NAME} SHARED
   ${SRCS}
   )
 
 TARGET_LINK_LIBRARIES(${LIBRARY_NAME}
+  Multirotor_plugin
   )
 
 SET (_soversion ${LIB_MAJOR}.${LIB_MINOR}.${LIB_RELEASE})
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES 
-  SOVERSION ${LIB_MAJOR} 
+set_target_properties(${LIBRARY_NAME} PROPERTIES
+  SOVERSION ${LIB_MAJOR}
   VERSION ${_soversion}
   LIBRARY_OUTPUT_DIRECTORY ${PROJECT_PLUGIN_LIBS_DIR}
   )

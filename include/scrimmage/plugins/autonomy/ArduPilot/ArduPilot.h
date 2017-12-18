@@ -34,7 +34,11 @@
 #define ArduPilot_H_
 #include <scrimmage/autonomy/Autonomy.h>
 
+#include <scrimmage/plugins/motion/Multirotor/Multirotor.h>
+#include <scrimmage/plugins/motion/Multirotor/MultirotorState.h>
+
 #include <thread>
+#include <mutex>
 
 namespace scrimmage {
 namespace autonomy {
@@ -70,14 +74,22 @@ public:
     virtual void close(double t);
 protected:
     double previous_step_time;
-    
+
     bool do_listen_to_ardu;
     bool do_send_to_ardu;
-    std::thread ardu_listener_thr; 
+    std::thread ardu_listener_thr;
     std::thread ardu_sender_thr;
-    void ardu_listener();    
+    void ardu_listener();
     void ardu_sender();
-   
+
+    std::shared_ptr<scrimmage::motion::Multirotor> multirotor_;
+    std::shared_ptr<scrimmage::motion::MultirotorState> desired_rotor_state_;
+
+    std::mutex servo_pkt_mutex_;
+    servo_packet servo_pkt_;
+
+
+
 };
 } // namespace autonomy
 } // namespace scrimmage
