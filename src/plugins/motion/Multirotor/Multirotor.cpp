@@ -203,6 +203,10 @@ bool Multirotor::step(double time, double dt) {
     Eigen::Vector3d prev_linear_vel(x_[U], x_[V], x_[W]);
     Eigen::Vector3d prev_angular_vel(x_[P], x_[Q], x_[R]);
 
+    // Apply any external forces
+    force_ext_body_ = quat_local_.rotate_reverse(ext_force_);
+    ext_force_ = Eigen::Vector3d::Zero(); // reset ext_force_ member variable
+
     ode_step(dt); // step the motion model ODE solver
 
     // Calculate change in velocity to populate acceleration elements
@@ -291,21 +295,14 @@ void Multirotor::model(const vector_t &x , vector_t &dxdt , double t) {
     double vel_mag = vel_body.norm();
     Eigen::Vector3d F_drag = vel_body * (-0.5 * c_D_ * vel_mag);
 
-    cout << "-------------" << endl;
-    cout << "ext_force_: " << ext_force_ << endl;
-
-    Eigen::Vector3d F_external = quat_local_.rotate_reverse(ext_force_);
-
-    ext_force_ = Eigen::Vector3d::Zero();
-
-    cout << "F_external: " << F_external << endl;
-    cout << "F_weight: " << F_weight << endl;
-    cout << "F_drag: " << F_drag << endl;
-
     // Calculate total force
-    Eigen::Vector3d F_total = F_thrust + F_weight + F_drag + F_external;
+    Eigen::Vector3d F_total = F_thrust + F_weight + F_drag + force_ext_body_;
 
-    cout << "F_total: " << F_total << endl;
+    // cout << "F_thrust: " << F_thrust << endl;
+    // cout << "F_drag: " << F_drag << endl;
+    // cout << "F_weight: " << F_weight << endl;
+    // cout << "f_ext: "<< force_ext_body_ << endl;
+    // cout << "F_total: " << F_total << endl;
 
     // Calculate moments from thrust
     Eigen::Vector3d M_thrust(0, 0, 0); // L, M, N

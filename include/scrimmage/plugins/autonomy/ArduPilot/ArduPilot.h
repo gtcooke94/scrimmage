@@ -36,6 +36,7 @@
 
 #include <scrimmage/plugins/motion/Multirotor/Multirotor.h>
 #include <scrimmage/plugins/motion/Multirotor/MultirotorState.h>
+#include <scrimmage/plugins/motion/RigidBody6DOF/RigidBody6DOFState.h>
 
 #include <thread>
 #include <mutex>
@@ -44,11 +45,12 @@ namespace scrimmage {
 namespace autonomy {
 class ArduPilot : public scrimmage::Autonomy {
 private:
+    static const int MAX_NUM_SERVOS = 16;
     /*
       packet received by Scrimmage with state of ArduPilot servos
       */
     struct servo_packet {
-        uint16_t servos[16];
+        uint16_t servos[MAX_NUM_SERVOS];
     };
 
     /*
@@ -88,7 +90,8 @@ protected:
     std::mutex servo_pkt_mutex_;
     servo_packet servo_pkt_;
 
-
+    std::mutex state_6dof_mutex_;
+    scrimmage::motion::RigidBody6DOFState state_6dof_;
 
 };
 } // namespace autonomy

@@ -43,7 +43,6 @@
 #include <scrimmage/plugins/interaction/GroundCollision/GroundCollision.h>
 
 #include <memory>
-#include <iostream>
 
 #include <GeographicLib/LocalCartesian.hpp>
 
@@ -90,8 +89,7 @@ bool GroundCollision::step_entity_interaction(std::list<sc::EntityPtr> &ents,
             } else {
                 // Apply a normal force to motion model in opposite direction
                 // of gravity.
-                std::cout << "Position: " << ent->state()->pos()(2) << std::endl;
-                double force = ent->motion()->mass() * 9.81;
+                double force = ent->motion()->mass() * ent->motion()->gravity_magnitude();
                 ent->motion()->set_external_force(Eigen::Vector3d(0, 0, force));
             }
 

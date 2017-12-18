@@ -41,6 +41,7 @@
 
 #include <scrimmage/plugins/autonomy/ArduPilot/ArduPilot.h>
 #include <scrimmage/parse/MissionParse.h>
+#include <scrimmage/sensor/Sensor.h>
 
 //Asio includes
 #include <asio/ip/udp.hpp>
@@ -66,6 +67,9 @@ ArduPilot::ArduPilot()
     , ardu_listener_thr(&ArduPilot::ardu_listener, this) //start listener thread
     , ardu_sender_thr(&ArduPilot::ardu_sender, this) //start listener thread
 {
+    for (int i = 0; i < MAX_NUM_SERVOS; i++) {
+        servo_pkt_.servos[i] = 0;
+    }
 }
 
 ArduPilot::~ArduPilot()
@@ -123,6 +127,18 @@ bool ArduPilot::step_autonomy(double t, double dt)
     //desired_state_->vel()(0) = 0.4f;
 
     previous_step_time = t;
+
+    // Make a copy of the state
+    for (auto kv : parent_->sensors()) {
+        if (kv.first == "RigidBody6DOFStateSensor0") {
+            auto msg = kv.second->sense<sc::motion::RigidBody6DOFState>(t);
+            if (msg) {
+                state_6dof_mutex_.lock();
+                state_6dof_ = (*msg)->data;
+                state_6dof_mutex_.unlock();
+            }
+        }
+    }
 
     servo_pkt_mutex_.lock();
     for (int i = 0; i < desired_rotor_state_->prop_input().size(); i++) {
