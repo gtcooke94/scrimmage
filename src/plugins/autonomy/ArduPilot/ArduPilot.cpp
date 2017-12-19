@@ -29,28 +29,33 @@
  *
  */
 
-#include <iostream>
-#include <limits>
-#include <fstream>
+#include <scrimmage/plugins/autonomy/ArduPilot/ArduPilot.h>
 
 #include <scrimmage/plugin_manager/RegisterPlugin.h>
 #include <scrimmage/entity/Entity.h>
 #include <scrimmage/math/Angles.h>
 #include <scrimmage/math/State.h>
 #include <scrimmage/parse/ParseUtils.h>
-
-#include <scrimmage/plugins/autonomy/ArduPilot/ArduPilot.h>
 #include <scrimmage/parse/MissionParse.h>
 #include <scrimmage/sensor/Sensor.h>
 
-//Asio includes
-#include <asio/ip/udp.hpp>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <fstream>
+
+#include <GeographicLib/LocalCartesian.hpp>
+
+#include <boost/bind.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/basic_datagram_socket.hpp>
 
 using std::cout;
 using std::cerr;
 using std::endl;
-using asio::ip::udp;
 
+namespace ba = boost::asio;
 namespace sc = scrimmage;
 
 REGISTER_PLUGIN(scrimmage::Autonomy,
@@ -61,25 +66,21 @@ namespace scrimmage {
 namespace autonomy {
 
 ArduPilot::ArduPilot()
-    : previous_step_time(-1.0)
-    , do_listen_to_ardu(true)
-    , do_send_to_ardu(true)
-    , ardu_listener_thr(&ArduPilot::ardu_listener, this) //start listener thread
-    , ardu_sender_thr(&ArduPilot::ardu_sender, this) //start listener thread
-{
+    : to_ardupilot_ip_("127.0.0.1")
+    , to_ardupilot_port_("5003")
+    , from_ardupilot_port_(5002) {
+
     for (int i = 0; i < MAX_NUM_SERVOS; i++) {
         servo_pkt_.servos[i] = 0;
     }
+
+    angles_to_gps_.set_input_clock_direction(sc::Angles::Rotate::CCW);
+    angles_to_gps_.set_input_zero_axis(sc::Angles::HeadingZero::Pos_X);
+    angles_to_gps_.set_output_clock_direction(sc::Angles::Rotate::CW);
+    angles_to_gps_.set_output_zero_axis(sc::Angles::HeadingZero::Pos_Y);
 }
 
-ArduPilot::~ArduPilot()
-{
-    //Destrutors currently don't work in SCRIMMAGE
-    //WORKAROUND: use close method inherited from Plugin class.
-}
-
-void ArduPilot::init(std::map<std::string,std::string> &params)
-{
+void ArduPilot::init(std::map<std::string, std::string> &params) {
     multirotor_ = std::dynamic_pointer_cast<sc::motion::Multirotor>(parent_->motion());
     if (multirotor_ == nullptr) {
         cout << "WARNING: MultirotorTests can't control the motion "
@@ -90,56 +91,61 @@ void ArduPilot::init(std::map<std::string,std::string> &params)
     desired_rotor_state_->set_input_type(sc::motion::MultirotorState::InputType::PWM);
     desired_rotor_state_->prop_input().resize(multirotor_->rotors().size());
     desired_state_ = desired_rotor_state_;
+
+    // Get parameters for transmit socket (to ardupilot)
+    to_ardupilot_ip_ = sc::get<std::string>("to_ardupilot_ip", params, "127.0.0.1");
+    to_ardupilot_port_ = sc::get<std::string>("to_ardupilot_port", params, "5003");
+
+    // Setup transmit socket
+    tx_socket_ = std::make_shared<ba::ip::udp::socket>(tx_io_service_,
+                                                       ba::ip::udp::endpoint(
+                                                           ba::ip::udp::v4(),
+                                                           0));
+
+    tx_resolver_ = std::make_shared<ba::ip::udp::resolver>(tx_io_service_);
+    tx_endpoint_ = *(tx_resolver_->resolve({ba::ip::udp::v4(),
+                    to_ardupilot_ip_, to_ardupilot_port_}));
+
+    // Get parameters for receive socket (from ardupilot)
+    from_ardupilot_port_ = sc::get<int>("from_ardupilot_port", params, 5002);
+    recv_socket_ = std::make_shared<ba::ip::udp::socket>(recv_io_service_,
+                                                         ba::ip::udp::endpoint(
+                                                             ba::ip::udp::v4(),
+                                                             from_ardupilot_port_));
+
+    // Enable the receive async callback
+    recv_socket_->async_receive_from(
+        ba::buffer(recv_buffer_), recv_remote_endpoint_,
+        boost::bind(&ArduPilot::handle_receive, this,
+                    ba::placeholders::error,
+                    ba::placeholders::bytes_transferred));
 }
 
-//runs as the Plugin closes
-void ArduPilot::close(double t)
-{
-    //try to get threads and associated file handles or any other I/O stuff
-    //to clean up before we shut down completely.
-    do_listen_to_ardu = false;
-    do_send_to_ardu = false;
+void ArduPilot::close(double t) {
 }
 
-bool ArduPilot::step_autonomy(double t, double dt)
-{
-
-    //std::cout << "state pos 0: " << state_->pos()(0) << std::endl; //x
-    //std::cout << "state pos 1: " << state_->pos()(1) << std::endl; //y
-    //std::cout << "state pos 2: " << state_->pos()(2) << std::endl; //z
-/*
-    std::cout << "state vel 0: " << state_->vel()(0) << std::endl;
-    std::cout << "state vel 1: " << state_->vel()(1) << std::endl;
-    std::cout << "state vel 2: " << state_->vel()(2) << std::endl;
-
-    std::cout << "state roll: " << Angles::rad2deg(state_->quat().roll()) << std::endl;
-    std::cout << "state pitch: " << Angles::rad2deg(state_->quat().pitch()) << std::endl;
-    std::cout << "state yaw: " << Angles::rad2deg(state_->quat().yaw()) << std::endl;
-
-    desired_state_->pos()(0) = 0.0f; // aileron  (x-axis rotation) (-1 to 1)
-    desired_state_->pos()(1) = 0.0f; // elevator (y-axis rotation) (-1 to 1)
-    desired_state_->pos()(2) = 0.0f; // rudder   (z-axis rotation) (-1 to 1)
-    desired_state_->vel()(0) = 0.0f; //throttle (0 to 1)
-*/
-    //cout << "setting desired state in ArudPilot autonomy plugin.\n";
-
-    //desired_state_->pos()(2) = 0.0f; // rudder   (z-axis rotation) (-1 to 1)
-    //desired_state_->vel()(0) = 0.4f;
-
-    previous_step_time = t;
-
-    // Make a copy of the state
+bool ArduPilot::step_autonomy(double t, double dt) {
+    scrimmage::motion::RigidBody6DOFState state_6dof;
     for (auto kv : parent_->sensors()) {
         if (kv.first == "RigidBody6DOFStateSensor0") {
             auto msg = kv.second->sense<sc::motion::RigidBody6DOFState>(t);
             if (msg) {
-                state_6dof_mutex_.lock();
-                state_6dof_ = (*msg)->data;
-                state_6dof_mutex_.unlock();
+                state_6dof = (*msg)->data;
             }
         }
     }
 
+    // Convert state6dof into ArduPilot fdm_packet and transmit
+    fdm_packet fdm_pkt = state6dof_to_fdm_packet(t, state_6dof);
+    try {
+        // TODO: Michael, endian handling?
+        tx_socket_->send_to(ba::buffer(&fdm_pkt, sizeof(fdm_packet)),
+                            tx_endpoint_);
+    } catch (std::exception& e) {
+        cerr << "Exception: " << e.what() << "\n";
+    }
+
+    // Copy the received servo commands into the desired state
     servo_pkt_mutex_.lock();
     for (int i = 0; i < desired_rotor_state_->prop_input().size(); i++) {
         desired_rotor_state_->prop_input()(i) = servo_pkt_.servos[i];
@@ -151,77 +157,90 @@ bool ArduPilot::step_autonomy(double t, double dt)
     return true;
 }
 
-void ArduPilot::ardu_listener() {
-    //connect to ardupilot
-    // TODO: un-hard code port.
-    uint32_t port = 5002;
-    asio::io_service io_service;
-    udp::socket sock(io_service, udp::endpoint(udp::v4(), port));
-    udp::endpoint sender_endpoint;
-    std::size_t reply_len = 0;
+void ArduPilot::handle_receive(const boost::system::error_code& error,
+                               std::size_t num_bytes) {
 
-    std::string debug_log = parent_->mp()->log_dir() + "/ardu_error.txt";
-    std::ofstream dbg_strm;
-    dbg_strm.open(debug_log, std::ofstream::out);
-    dbg_strm << "SCRIMMAGE Ardupilot plugin error log.\n";
-
-    //listen for control inputs from ardupilot
-    while (do_listen_to_ardu) {
-        servo_packet pkt = {0}; //reinitialize ever iteration to ensure clean.
-
-        try {
-            reply_len = sock.receive_from(
-                asio::buffer(&pkt, sizeof(pkt)), sender_endpoint);
-
-        } catch (std::exception& e) {
-            cerr << "Socket error: << " << e.what() << endl;
-            dbg_strm << "Socket error: << " << e.what() << endl;
-        }
-
-        if (reply_len < sizeof(pkt)) {
-            continue; //ignore packets without sufficient data
-        }
-
-        servo_pkt_mutex_.lock();
-        servo_pkt_ = pkt;
-        servo_pkt_mutex_.unlock();
-
-        //TODO: delte lines
-        //dbg_strm << "Got a packet with " << reply_len << " bytes: \n";
-        //dbg_strm << pkt.servos[0] << endl;
-        //cout << pkt.servos[0] << endl;
-
-        //TODO: endian handling
-        //
-        //TODO: send servo inputs just received to appropriate SCRIMMAGE model
+    // TODO: Michael, verify this number of bytes check
+    if (num_bytes != sizeof(uint16_t)*MAX_NUM_SERVOS) {
+        cout << "Received wrong number of bytes: " << num_bytes << endl;
+        return;
     }
-    dbg_strm.close();
+
+    servo_pkt_mutex_.lock();
+    for (unsigned int i = 0; i < num_bytes / sizeof(uint16_t); i++) {
+        // TODO: Michael, verify this conversion from a boost array to servo
+        // packet structure. Best way to handle endianess?
+        servo_pkt_.servos[i] = (recv_buffer_[i*2+1] << 16) || recv_buffer_[i*2];
+    }
+    servo_pkt_mutex_.unlock();
 }
 
-void ArduPilot::ardu_sender() {
-    //connect to ardupilot
-    asio::io_service io_service;
+ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
+    double t, sc::motion::RigidBody6DOFState &state) {
 
-    //TODO: un-hardcode IP address and port
-    udp::socket s(io_service, udp::endpoint(udp::v4(), 0));
-    udp::resolver resolver(io_service);
-    udp::endpoint endpoint = *resolver.resolve({udp::v4(), "127.0.0.1", "5003"});
-    //forward aircraft state to ArduPilot
-    while (do_send_to_ardu) {
-        fdm_packet fdm_pkt = {0}; //re-init every iteration to keep clean
+    fdm_packet fdm_pkt = {0};
 
-        //TODO: remaining data needs to get into fdm_packet to send to Ardu
-        fdm_pkt.timestamp_us = uint64_t(previous_step_time * 1.0e6);
-        fdm_pkt.latitude = 921.0;
+    fdm_pkt.timestamp_us = t * 1e6;
 
-        //TODO: endian handling.
-        try {
-            s.send_to(asio::buffer(&fdm_pkt, sizeof(fdm_packet)), endpoint);
-        } catch (std::exception& e) {
-            //TODO: log
-            cerr << "Exception: " << e.what() << "\n";
-        }
-    }
+    // x/y/z to lat/lon/alt conversion
+    parent_->projection()->Reverse(state.pos()(0), state.pos()(1),
+                                   state.pos()(2), fdm_pkt.latitude,
+                                   fdm_pkt.longitude,
+                                   fdm_pkt.altitude);
+
+    // Heading conversion
+    angles_to_gps_.set_angle(sc::Angles::rad2deg(state.quat().yaw()));
+    fdm_pkt.heading = angles_to_gps_.angle();
+
+    fdm_pkt.speedN = state.vel()(1);
+    fdm_pkt.speedE = state.vel()(0);
+    fdm_pkt.speedD = -state.vel()(2);
+
+    // Body frame linear acceleration
+    fdm_pkt.xAccel = state.linear_accel_body()(0);
+    fdm_pkt.yAccel = -state.linear_accel_body()(1);
+    fdm_pkt.zAccel = -state.linear_accel_body()(2);
+
+    // Body frame rotational accelerations
+    fdm_pkt.rollRate = state.ang_accel_body()(0);
+    fdm_pkt.pitchRate = state.ang_accel_body()(1);
+    fdm_pkt.yawRate = state.ang_accel_body()(2);
+
+    // Global frame, roll, pitch, yaw
+    fdm_pkt.roll = state.quat().roll();
+    fdm_pkt.pitch = state.quat().pitch();
+    fdm_pkt.yaw = state.quat().yaw(); // Is this the same as heading?
+
+    // Airspeed is magnitude of velocity vector for now
+    fdm_pkt.airspeed = state.vel().norm();
+
+#if 1
+    // TODO: Michael, verify data is in correct coordinate frames.
+    cout << "--------------------------------------------------------" << endl;
+    cout << "  State information being sent to ArduPilot" << endl;
+    cout << "--------------------------------------------------------" << endl;
+    int prec = 9;
+    cout << std::setprecision(prec) << "timestamp_us: " << fdm_pkt.timestamp_us << endl;
+    cout << std::setprecision(prec) << "Latitude: " << fdm_pkt.latitude << endl;
+    cout << std::setprecision(prec) << "Longitude: " << fdm_pkt.longitude << endl;
+    cout << std::setprecision(prec) << "Altitude: " << fdm_pkt.altitude << endl;
+    cout << std::setprecision(prec) << "Airspeed: " << fdm_pkt.airspeed << endl;
+    cout << std::setprecision(prec) << "Roll: " << fdm_pkt.roll << endl;
+    cout << std::setprecision(prec) << "Pitch: " << fdm_pkt.pitch << endl;
+    cout << std::setprecision(prec) << "Yaw: " << fdm_pkt.yaw << endl;
+    cout << std::setprecision(prec) << "xAccel: " << fdm_pkt.xAccel << endl;
+    cout << std::setprecision(prec) << "yAccel: " << fdm_pkt.yAccel << endl;
+    cout << std::setprecision(prec) << "zAccel: " << fdm_pkt.zAccel << endl;
+    cout << std::setprecision(prec) << "speedN: " << fdm_pkt.speedN << endl;
+    cout << std::setprecision(prec) << "speedE: " << fdm_pkt.speedE << endl;
+    cout << std::setprecision(prec) << "speedD: " << fdm_pkt.speedD << endl;
+    cout << std::setprecision(prec) << "heading: " << fdm_pkt.heading << endl;
+    cout << std::setprecision(prec) << "rollRate: " << fdm_pkt.rollRate << endl;
+    cout << std::setprecision(prec) << "pitchRate: " << fdm_pkt.pitchRate << endl;
+    cout << std::setprecision(prec) << "yawRate: " << fdm_pkt.yawRate << endl;
+#endif
+
+    return fdm_pkt;
 }
 
 } // namespace autonomy

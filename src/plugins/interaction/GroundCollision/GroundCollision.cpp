@@ -54,7 +54,8 @@ REGISTER_PLUGIN(scrimmage::EntityInteraction, scrimmage::interaction::GroundColl
 namespace scrimmage {
 namespace interaction {
 
-GroundCollision::GroundCollision() : remove_on_collision_(true),
+GroundCollision::GroundCollision() : ground_collision_z_(0.0),
+                                     remove_on_collision_(true),
                                      enable_startup_collisions_(true) {
 }
 

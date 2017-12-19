@@ -30,32 +30,36 @@
  *
  */
 
-#ifndef ArduPilot_H_
-#define ArduPilot_H_
+#ifndef INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_ARDUPILOT_ARDUPILOT_H_
+#define INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_ARDUPILOT_ARDUPILOT_H_
+
 #include <scrimmage/autonomy/Autonomy.h>
+#include <scrimmage/math/Angles.h>
 
 #include <scrimmage/plugins/motion/Multirotor/Multirotor.h>
 #include <scrimmage/plugins/motion/Multirotor/MultirotorState.h>
 #include <scrimmage/plugins/motion/RigidBody6DOF/RigidBody6DOFState.h>
 
-#include <thread>
-#include <mutex>
+#include <thread> // NOLINT
+#include <mutex> // NOLINT
+#include <map>
+#include <string>
+
+#include <boost/asio.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/array.hpp>
 
 namespace scrimmage {
 namespace autonomy {
 class ArduPilot : public scrimmage::Autonomy {
-private:
+ private:
     static const int MAX_NUM_SERVOS = 16;
-    /*
-      packet received by Scrimmage with state of ArduPilot servos
-      */
+    // Packet received by Scrimmage with state of ArduPilot servos
     struct servo_packet {
         uint16_t servos[MAX_NUM_SERVOS];
     };
 
-    /*
-      state packet sent from Scrimmage to ArduPilot
-     */
+    // State packet sent from Scrimmage to ArduPilot
     struct fdm_packet {
         uint64_t timestamp_us; // simulation time in microseconds
         double latitude, longitude;
@@ -68,32 +72,41 @@ private:
         double airspeed;
     };
 
-public:
+ public:
     ArduPilot();
-    ~ArduPilot();
-    virtual void init(std::map<std::string,std::string> &params);
+    virtual void init(std::map<std::string, std::string> &params);
     virtual bool step_autonomy(double t, double dt);
     virtual void close(double t);
-protected:
-    double previous_step_time;
 
-    bool do_listen_to_ardu;
-    bool do_send_to_ardu;
-    std::thread ardu_listener_thr;
-    std::thread ardu_sender_thr;
-    void ardu_listener();
-    void ardu_sender();
+ protected:
+    std::string to_ardupilot_ip_;
+    std::string to_ardupilot_port_;
+
+    boost::asio::io_service tx_io_service_;
+    std::shared_ptr<boost::asio::ip::udp::socket> tx_socket_;
+    std::shared_ptr<boost::asio::ip::udp::resolver> tx_resolver_;
+    boost::asio::ip::udp::endpoint tx_endpoint_;
 
     std::shared_ptr<scrimmage::motion::Multirotor> multirotor_;
     std::shared_ptr<scrimmage::motion::MultirotorState> desired_rotor_state_;
 
-    std::mutex servo_pkt_mutex_;
     servo_packet servo_pkt_;
+    std::mutex servo_pkt_mutex_;
 
-    std::mutex state_6dof_mutex_;
-    scrimmage::motion::RigidBody6DOFState state_6dof_;
+    scrimmage::Angles angles_to_gps_;
 
+    fdm_packet state6dof_to_fdm_packet(double t,
+                                       sc::motion::RigidBody6DOFState &state);
+
+    boost::asio::io_service recv_io_service_;
+    std::shared_ptr<boost::asio::ip::udp::socket> recv_socket_;
+    boost::asio::ip::udp::endpoint recv_remote_endpoint_;
+    boost::array<char, 1> recv_buffer_;
+    uint32_t from_ardupilot_port_;
+
+    void handle_receive(const boost::system::error_code& error,
+                        std::size_t num_bytes);
 };
 } // namespace autonomy
 } // namespace scrimmage
-#endif
+#endif // INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_ARDUPILOT_ARDUPILOT_H_

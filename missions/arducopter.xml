@@ -57,7 +57,7 @@
     <heading>0</heading>
 
     <autonomy>ArduPilot</autonomy>
-    <motion_model write_csv="false" omega_min="0">Multirotor</motion_model>
+    <motion_model write_csv="true" omega_min="0">Multirotor</motion_model>
     <controller>MultirotorControllerOmega</controller>
     <visual_model>iris</visual_model>    
     

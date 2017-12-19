@@ -298,12 +298,6 @@ void Multirotor::model(const vector_t &x , vector_t &dxdt , double t) {
     // Calculate total force
     Eigen::Vector3d F_total = F_thrust + F_weight + F_drag + force_ext_body_;
 
-    // cout << "F_thrust: " << F_thrust << endl;
-    // cout << "F_drag: " << F_drag << endl;
-    // cout << "F_weight: " << F_weight << endl;
-    // cout << "f_ext: "<< force_ext_body_ << endl;
-    // cout << "F_total: " << F_total << endl;
-
     // Calculate moments from thrust
     Eigen::Vector3d M_thrust(0, 0, 0); // L, M, N
 

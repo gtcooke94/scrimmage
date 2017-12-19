@@ -1,9 +1,3 @@
-find_package(Asio QUIET)
-if (NOT Asio_FOUND)
-    message("WARNING: Boost asio not found, not building ArduPilot plugin.")
-    return()
-endif()
-
 #--------------------------------------------------------
 # Library Creation
 #--------------------------------------------------------
@@ -19,8 +13,6 @@ file(GLOB SRCS *.cpp)
 add_definitions (
     -Wfatal-errors
 )
-
-include_directories(${Asio_INCLUDE_DIR})
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED
   ${SRCS}
