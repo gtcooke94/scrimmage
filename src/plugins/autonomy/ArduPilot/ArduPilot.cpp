@@ -122,6 +122,8 @@ void ArduPilot::init(std::map<std::string, std::string> &params) {
 }
 
 void ArduPilot::close(double t) {
+    tx_socket_->close();
+    recv_socket_->close();
 }
 
 bool ArduPilot::step_autonomy(double t, double dt) {
@@ -145,6 +147,9 @@ bool ArduPilot::step_autonomy(double t, double dt) {
         cerr << "Exception: " << e.what() << "\n";
     }
 
+    // Let async receive callback run
+    recv_io_service_.poll();
+
     // Copy the received servo commands into the desired state
     servo_pkt_mutex_.lock();
     for (int i = 0; i < desired_rotor_state_->prop_input().size(); i++) {
@@ -159,6 +164,11 @@ bool ArduPilot::step_autonomy(double t, double dt) {
 
 void ArduPilot::handle_receive(const boost::system::error_code& error,
                                std::size_t num_bytes) {
+
+    if (error) {
+        cout << "error: handle_receive" << endl;
+        return;
+    }
 
     // TODO: Michael, verify this number of bytes check
     if (num_bytes != sizeof(uint16_t)*MAX_NUM_SERVOS) {
