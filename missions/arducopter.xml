@@ -8,10 +8,10 @@
        time_warp="1"
        enable_gui="true"
        network_gui="false"
-       start_paused="true"/>
-  
+       start_paused="false"/>
+
   <stream_port>50051</stream_port>
-  <stream_ip>localhost</stream_ip>    
+  <stream_ip>localhost</stream_ip>
 
   <end_condition>all_dead</end_condition> <!-- time, one_team, none-->
 
@@ -30,9 +30,9 @@
 
   <log_dir>~/.scrimmage/logs</log_dir>
 
-  <latitude_origin>35.718719</latitude_origin>
-  <longitude_origin>-120.769818</longitude_origin>
-  <altitude_origin>0</altitude_origin>
+  <latitude_origin>32.42553</latitude_origin>
+  <longitude_origin>-84.79109</longitude_origin>
+  <altitude_origin>75</altitude_origin>
   <show_origin>true</show_origin>
   <origin_length>10</origin_length>
 
@@ -54,13 +54,13 @@
     <x>0</x>
     <y>0</y>
     <z>0</z>
-    <heading>0</heading>
+    <heading>190</heading>
 
     <autonomy>ArduPilot</autonomy>
     <motion_model write_csv="true" omega_min="0">Multirotor</motion_model>
     <controller>MultirotorControllerOmega</controller>
-    <visual_model>iris</visual_model>    
-    
+    <visual_model>iris</visual_model>
+
   </entity>
 
 </runscript>
