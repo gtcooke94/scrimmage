@@ -127,6 +127,7 @@ void ArduPilot::close(double t) {
 }
 
 bool ArduPilot::step_autonomy(double t, double dt) {
+
     scrimmage::motion::RigidBody6DOFState state_6dof;
     for (auto kv : parent_->sensors()) {
         if (kv.first == "RigidBody6DOFStateSensor0") {
@@ -201,7 +202,7 @@ ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
 
     // Heading conversion
     angles_to_gps_.set_angle(sc::Angles::rad2deg(state.quat().yaw()));
-    fdm_pkt.heading = angles_to_gps_.angle();
+    fdm_pkt.heading = sc::Angles::deg2rad(angles_to_gps_.angle());
 
     fdm_pkt.speedN = state.vel()(1);
     fdm_pkt.speedE = state.vel()(0);
@@ -220,7 +221,7 @@ ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
     // Global frame, roll, pitch, yaw
     fdm_pkt.roll = state.quat().roll();
     fdm_pkt.pitch = state.quat().pitch();
-    fdm_pkt.yaw = sc::Angles::deg2rad(fdm_pkt.heading); //state.quat().yaw(); // Is this the same as heading?
+    fdm_pkt.yaw = fdm_pkt.heading; //state.quat().yaw(); // Is this the same as heading?
 
     // Airspeed is magnitude of velocity vector for now
     fdm_pkt.airspeed = state.vel().norm();

@@ -88,10 +88,13 @@ bool GroundCollision::step_entity_interaction(std::list<sc::EntityPtr> &ents,
             if (remove_on_collision_) {
                 ent->collision();
             } else {
-                // Apply a normal force to motion model in opposite direction
-                // of gravity.
-                double force = ent->motion()->mass() * ent->motion()->gravity_magnitude();
-                ent->motion()->set_external_force(Eigen::Vector3d(0, 0, force));
+                //// Apply a normal force to motion model in opposite direction
+                //// of gravity.
+                //double force = ent->motion()->mass() * ent->motion()->gravity_magnitude();
+                //ent->motion()->set_external_force(Eigen::Vector3d(0, 0, force));
+                StatePtr &s = ent->state();
+                s->pos()(2) = ground_collision_z_;
+                ent->motion()->teleport(s);
             }
 
             auto msg = std::make_shared<sc::Message<sm::GroundCollision>>();

@@ -56,6 +56,8 @@
     <z>0</z>
     <heading>190</heading>
 
+    <sensor>RigidBody6DOFStateSensor</sensor>
+
     <autonomy>ArduPilot</autonomy>
     <motion_model write_csv="true" omega_min="0">Multirotor</motion_model>
     <controller>MultirotorControllerOmega</controller>
