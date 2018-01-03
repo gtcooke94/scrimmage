@@ -221,7 +221,7 @@ ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
     // Global frame, roll, pitch, yaw
     fdm_pkt.roll = state.quat().roll();
     fdm_pkt.pitch = state.quat().pitch();
-    fdm_pkt.yaw = fdm_pkt.heading; //state.quat().yaw(); // Is this the same as heading?
+    fdm_pkt.yaw = fdm_pkt.heading;
 
     // Airspeed is magnitude of velocity vector for now
     fdm_pkt.airspeed = state.vel().norm();

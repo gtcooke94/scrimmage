@@ -92,10 +92,10 @@ bool GroundCollision::step_entity_interaction(std::list<sc::EntityPtr> &ents,
                 // of gravity.
                 double force = ent->motion()->mass() * ent->motion()->gravity_magnitude();
                 ent->motion()->set_external_force(Eigen::Vector3d(0, 0, force));
-                //StatePtr &s = ent->state();
-                //s->pos()(2) = ground_collision_z_;
-                //s->vel() << 0, 0, 0;
-                //ent->motion()->teleport(s);
+                // StatePtr &s = ent->state();
+                // s->pos()(2) = ground_collision_z_;
+                // s->vel() << 0, 0, 0;
+                // ent->motion()->teleport(s);
             }
 
             auto msg = std::make_shared<sc::Message<sm::GroundCollision>>();
