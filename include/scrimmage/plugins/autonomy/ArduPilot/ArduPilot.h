@@ -101,9 +101,10 @@ class ArduPilot : public scrimmage::Autonomy {
     boost::asio::io_service recv_io_service_;
     std::shared_ptr<boost::asio::ip::udp::socket> recv_socket_;
     boost::asio::ip::udp::endpoint recv_remote_endpoint_;
-    boost::array<char, 1> recv_buffer_;
+    boost::array<unsigned char, 100> recv_buffer_;
     uint32_t from_ardupilot_port_;
 
+    void start_receive();
     void handle_receive(const boost::system::error_code& error,
                         std::size_t num_bytes);
 };

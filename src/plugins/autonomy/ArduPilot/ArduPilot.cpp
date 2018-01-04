@@ -112,7 +112,10 @@ void ArduPilot::init(std::map<std::string, std::string> &params) {
                                                          ba::ip::udp::endpoint(
                                                              ba::ip::udp::v4(),
                                                              from_ardupilot_port_));
+    start_receive();
+}
 
+void ArduPilot::start_receive() {
     // Enable the receive async callback
     recv_socket_->async_receive_from(
         ba::buffer(recv_buffer_), recv_remote_endpoint_,
@@ -127,7 +130,6 @@ void ArduPilot::close(double t) {
 }
 
 bool ArduPilot::step_autonomy(double t, double dt) {
-
     scrimmage::motion::RigidBody6DOFState state_6dof;
     for (auto kv : parent_->sensors()) {
         if (kv.first == "RigidBody6DOFStateSensor0") {
@@ -156,6 +158,11 @@ bool ArduPilot::step_autonomy(double t, double dt) {
     for (int i = 0; i < desired_rotor_state_->prop_input().size(); i++) {
         desired_rotor_state_->prop_input()(i) = servo_pkt_.servos[i];
     }
+    //desired_rotor_state_->prop_input()(0) = 1500;
+    //desired_rotor_state_->prop_input()(1) = 1500;
+    //desired_rotor_state_->prop_input()(2) = 1500;
+    //desired_rotor_state_->prop_input()(3) = 1501;
+
     servo_pkt_mutex_.unlock();
 
     desired_state_ = desired_rotor_state_;
@@ -166,25 +173,25 @@ bool ArduPilot::step_autonomy(double t, double dt) {
 void ArduPilot::handle_receive(const boost::system::error_code& error,
                                std::size_t num_bytes) {
 
-    cout << "SCRIMMAGE RECEIVED Data" << endl;
+    //cout << "SCRIMMAGE RECEIVED Data, num_bytes: " << num_bytes << endl;
     if (error) {
         cout << "error: handle_receive" << endl;
-        return;
-    }
-
-    // TODO: Michael, verify this number of bytes check
-    if (num_bytes != sizeof(uint16_t)*MAX_NUM_SERVOS) {
+    } else if (num_bytes != sizeof(servo_packet)) {
         cout << "Received wrong number of bytes: " << num_bytes << endl;
-        return;
+        cout << "Expected number of bytes: " << sizeof(servo_packet) << endl;
+    } else {
+        //cout << "Received valid data from ardupilot" << endl;
+        //for (unsigned int i = 0; i < num_bytes; i++) {
+        //    cout << i << " : " << static_cast<unsigned int>(recv_buffer_[i]) << endl;
+        //}
+        servo_pkt_mutex_.lock();
+        for (unsigned int i = 0; i < num_bytes / sizeof(uint16_t); i++) {
+            servo_pkt_.servos[i] = (recv_buffer_[i*2+1] << 8) + recv_buffer_[i*2];
+            //cout << "servos[" << i << "]: " << servo_pkt_.servos[i] << endl;
+        }
+        servo_pkt_mutex_.unlock();
     }
-
-    servo_pkt_mutex_.lock();
-    for (unsigned int i = 0; i < num_bytes / sizeof(uint16_t); i++) {
-        // TODO: Michael, verify this conversion from a boost array to servo
-        // packet structure. Best way to handle endianess?
-        servo_pkt_.servos[i] = (recv_buffer_[i*2+1] << 16) || recv_buffer_[i*2];
-    }
-    servo_pkt_mutex_.unlock();
+    start_receive(); // enable async receive for next message
 }
 
 ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
@@ -214,19 +221,22 @@ ArduPilot::fdm_packet ArduPilot::state6dof_to_fdm_packet(
     fdm_pkt.zAccel = -state.linear_accel_body()(2);
 
     // Body frame rotational accelerations
-    fdm_pkt.rollRate = state.ang_accel_body()(0);
-    fdm_pkt.pitchRate = state.ang_accel_body()(1);
-    fdm_pkt.yawRate = state.ang_accel_body()(2);
+    //fdm_pkt.rollRate = state.ang_accel_body()(0);
+    //fdm_pkt.pitchRate = -state.ang_accel_body()(1);
+    //fdm_pkt.yawRate = -state.ang_accel_body()(2);
+    fdm_pkt.rollRate = state.ang_vel_body()(0);
+    fdm_pkt.pitchRate = -state.ang_vel_body()(1);
+    fdm_pkt.yawRate = -state.ang_vel_body()(2);
 
     // Global frame, roll, pitch, yaw
     fdm_pkt.roll = state.quat().roll();
-    fdm_pkt.pitch = state.quat().pitch();
+    fdm_pkt.pitch = -state.quat().pitch();
     fdm_pkt.yaw = fdm_pkt.heading;
 
     // Airspeed is magnitude of velocity vector for now
     fdm_pkt.airspeed = state.vel().norm();
 
-#if 0
+#if 1
     // TODO: Michael, verify data is in correct coordinate frames.
     cout << "--------------------------------------------------------" << endl;
     cout << "  State information being sent to ArduPilot" << endl;

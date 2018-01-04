@@ -26,7 +26,7 @@
   <output_type>all</output_type>
   <show_plugins>false</show_plugins>
 
-  <metrics order="0">SimpleCollisionMetrics</metrics>
+  <metrics>SimpleCollisionMetrics</metrics>
 
   <log_dir>~/.scrimmage/logs</log_dir>
 
@@ -54,12 +54,14 @@
     <x>0</x>
     <y>0</y>
     <z>0</z>
-    <heading>190</heading>
+    <!--<heading>190</heading>-->
+    <heading>0</heading>
+    
 
     <sensor>RigidBody6DOFStateSensor</sensor>
 
     <autonomy>ArduPilot</autonomy>
-    <motion_model write_csv="true" omega_min="0">Multirotor</motion_model>
+    <motion_model write_csv="true">Multirotor</motion_model>
     <controller>MultirotorControllerOmega</controller>
     <visual_model>iris</visual_model>
 
