@@ -1290,6 +1290,16 @@ bool SimControl::output_runtime() {
 bool SimControl::output_summary() {
 
     sql::Driver* driver = get_driver_instance();
+    const std::string user("root");
+    const std::string pass("scrimmage");
+    const std::string url("localhost");
+    std::auto_ptr<sql::Connection> con(driver->connect(url, user, pass));
+    std::auto_ptr<sql::Statement> stmt(con->createStatement());
+    stmt->execute("CREATE DATABASE IF NOT EXISTS scrimmage;");
+    stmt->execute("USE scrimmage;");
+    stmt->execute("CREATE TABLE straight_test_summary (team INT, score DOUBLE);");
+
+
 
     std::map<int, double> team_scores;
     std::map<int, std::map<std::string, double>> team_metrics;

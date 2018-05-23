@@ -36,6 +36,10 @@ ADD_LIBRARY( ${LIBRARY_NAME} SHARED
 
 add_dependencies(${LIBRARY_NAME} scrimmage scrimmage-msgs scrimmage-proto-gen)
 
+# find_package(MySQLCppConn)
+# This link is a good starting place for finding the mysqlcppconn package
+# https://fossies.org/linux/mysql-workbench-community/build/cmake/Modules/FindMySQLCppConn.cmake
+
 target_link_libraries(
   ${LIBRARY_NAME}
   scrimmage-protos
