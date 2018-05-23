@@ -77,6 +77,14 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 
+
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/resultset.h>
+#include <cppconn/statement.h>
+#include <cppconn/prepared_statement.h>
+#include <stdlib.h>
+
 namespace sc = scrimmage;
 namespace sp = scrimmage_proto;
 namespace sm = scrimmage_msgs;
@@ -1280,6 +1288,9 @@ bool SimControl::output_runtime() {
 }
 
 bool SimControl::output_summary() {
+
+    sql::Driver* driver = get_driver_instance();
+
     std::map<int, double> team_scores;
     std::map<int, std::map<std::string, double>> team_metrics;
     std::list<std::string> headers;

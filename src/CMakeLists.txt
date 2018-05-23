@@ -44,6 +44,7 @@ target_link_libraries(
   ${GeographicLib_LIBRARIES}
   scrimmage-msgs
   ${CMAKE_DL_LIBS}
+  mysqlcppconn
 )
 
 SET (_soversion ${LIB_MAJOR}.${LIB_MINOR}.${LIB_RELEASE})
