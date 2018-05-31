@@ -77,9 +77,13 @@ bool CPA::step_metrics(double t, double dt) {
                 double cur_distance = (kv.second->state()->pos() -
                         kv2.second->state()->pos()).norm();
                 if (cur_distance < cpa_map_[kv.first].distance()) {
+                    std::cout << "setting stuff" << std::endl;
                     cpa_map_[kv.first].set_distance(cur_distance);
                     cpa_map_[kv.first].set_closest_entity(kv2.first);
                     cpa_map_[kv.first].set_time(t);
+                    std::cout << cur_distance << std::endl;
+                    std::cout << kv2.first << std::endl;
+                    std::cout << t << std::endl;
                 }
             }
         }
@@ -102,13 +106,13 @@ void CPA::calc_team_scores() {
             cpa_map_[kv.first].closest_entity();
         team_metrics_[kv.second->id().team_id()]["time"] =
             cpa_map_[kv.first].time();
-
+        std::cout << "Closest Entity:" << cpa_map_[kv.first].closest_entity() << std::endl;
 
     }
     // list the headers we want put in the csv file
     headers_.push_back("entity");
     headers_.push_back("cpa");
-    headers_.push_back("closest entity");
+    headers_.push_back("closest_entity");
     headers_.push_back("time");
 }
 
