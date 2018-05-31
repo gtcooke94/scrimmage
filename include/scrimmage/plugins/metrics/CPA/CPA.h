@@ -39,11 +39,29 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <limits>
 
 namespace sc = scrimmage;
 
 namespace scrimmage {
 namespace metrics {
+
+class CPAData {
+ public:
+    CPAData() {}
+    double distance() {return distance_;}
+    int closest_entity() {return closest_entity_;}
+    double time() {return time_;}
+    void set_distance(double dist) {distance_ = dist;}
+    void set_closest_entity(int id) {closest_entity_ = id;}
+    void set_time(double t) {time_ = t;}
+
+ protected:
+    double distance_ = std::numeric_limits<double>::infinity();
+    int closest_entity_ = -1;
+    double time_ = -1;
+
+};
 
 class CPA : public scrimmage::Metrics {
  public:
@@ -57,7 +75,7 @@ class CPA : public scrimmage::Metrics {
     std::map<std::string, std::string> params_;
 
     // Entity Num: CPA, Closest Entity, Time
-    std::map<int, std::vector<double, int, double>> cpa_map_;
+    std::map<int, CPAData> cpa_map_;
  private:
 };
 

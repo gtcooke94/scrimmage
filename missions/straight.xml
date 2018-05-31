@@ -3,7 +3,7 @@
 <runscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     name="Straight flying">
 
-  <run start="0.0" end="1000" dt="0.1"
+  <run start="0.0" end="100" dt="0.1"
        time_warp="20"
        enable_gui="true"
        network_gui="false"
@@ -26,7 +26,8 @@
   <output_type>all</output_type>
   <show_plugins>false</show_plugins>
 
-  <metrics>SimpleCollisionMetrics</metrics>
+  <!-- <metrics>SimpleCollisionMetrics</metrics> -->
+  <metrics>CPA</metrics>
 
   <log_dir>~/.scrimmage/logs</log_dir>
   <create_latest_dir>true</create_latest_dir>
@@ -88,7 +89,7 @@
   <entity>
     <team_id>2</team_id>
     <color>255 0 0</color>
-    <count>30</count>
+    <count>1</count>
     <health>1</health>
     <radius>2</radius>
 
