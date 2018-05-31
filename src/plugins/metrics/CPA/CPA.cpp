@@ -44,6 +44,8 @@
 #include <scrimmage/msgs/Collision.pb.h>
 #include <scrimmage/msgs/Event.pb.h>
 
+#include <scrimmage/parse/MissionParse.h>
+
 #include <iostream>
 #include <limits>
 
@@ -64,13 +66,24 @@ CPA::CPA() {
 }
 
 void CPA::init(std::map<std::string, std::string> &params) {
-    for (auto &kv : *id_to_ent_map_) {
-        cpa_map_[kv.first] = CPAData();
-
-    }
 }
 
 bool CPA::step_metrics(double t, double dt) {
+    if (!initialized_) {
+        for (auto &kv : *id_to_ent_map_) {
+            cpa_map_[kv.first] = CPAData();
+            std::cout << kv.second->mp()->log_dir() << std::endl;
+        }
+        std::string log_dir = ((*id_to_ent_map_)[1])->mp()->log_dir();
+        csv_.open_output(log_dir + "/" + "cpa.csv");
+        csv_.set_column_headers(scrimmage::CSV::Headers{
+                "entity",
+                "cpa",
+                "closest_entity",
+                "time"});
+        initialized_ = true;
+    }
+
     for (auto &kv : *id_to_ent_map_) {
         for (auto &kv2 : *id_to_ent_map_) {
             if (kv != kv2) {
@@ -98,22 +111,28 @@ void CPA::calc_team_scores() {
         // team_metrics_[team_id]["ground_coll"] = score.ground_collisions();
         // team_scores_[team_id] = score.score();
     // }
-    for (auto &kv : *id_to_ent_map_) {
-        team_metrics_[kv.second->id().team_id()]["entity"] = kv.first;
-        team_metrics_[kv.second->id().team_id()]["cpa"] =
-            cpa_map_[kv.first].distance();
-        team_metrics_[kv.second->id().team_id()]["closest_entity"] =
-            cpa_map_[kv.first].closest_entity();
-        team_metrics_[kv.second->id().team_id()]["time"] =
-            cpa_map_[kv.first].time();
-        std::cout << "Closest Entity:" << cpa_map_[kv.first].closest_entity() << std::endl;
-
+    // for (auto &kv : *id_to_ent_map_) {
+        // team_metrics_[kv.second->id().team_id()]["entity"] = kv.first;
+        // team_metrics_[kv.second->id().team_id()]["cpa"] =
+            // cpa_map_[kv.first].distance();
+        // team_metrics_[kv.second->id().team_id()]["closest_entity"] =
+            // cpa_map_[kv.first].closest_entity();
+        // team_metrics_[kv.second->id().team_id()]["time"] =
+            // cpa_map_[kv.first].time();
+        // std::cout << "Closest Entity:" << cpa_map_[kv.first].closest_entity() << std::endl;
+    // }
+    // // list the headers we want put in the csv file
+    // headers_.push_back("entity");
+    // headers_.push_back("cpa");
+    // headers_.push_back("closest_entity");
+    // headers_.push_back("time");
+    for (auto &kv: cpa_map_) {
+        csv_.append(scrimmage::CSV::Pairs{
+                {"entity", kv.first},
+                {"cpa", kv.second.distance()},
+                {"closest_entity", kv.second.closest_entity()},
+                {"time", kv.second.time()}});
     }
-    // list the headers we want put in the csv file
-    headers_.push_back("entity");
-    headers_.push_back("cpa");
-    headers_.push_back("closest_entity");
-    headers_.push_back("time");
 }
 
 void CPA::print_team_summaries() {

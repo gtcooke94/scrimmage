@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <scrimmage/common/CSV.h>
 
 namespace sc = scrimmage;
 
@@ -60,7 +61,6 @@ class CPAData {
     double distance_ = std::numeric_limits<double>::infinity();
     int closest_entity_ = -1;
     double time_ = -1;
-
 };
 
 class CPA : public scrimmage::Metrics {
@@ -76,6 +76,8 @@ class CPA : public scrimmage::Metrics {
 
     // Entity Num: CPA, Closest Entity, Time
     std::map<int, CPAData> cpa_map_;
+    CSV csv_;
+    bool initialized_ = false;
  private:
 };
 
