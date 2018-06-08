@@ -52,8 +52,14 @@ bool Postgres::create_schema(string schema_name) {
     std::string timestamp = schema_name.substr(last_dash_pos + 1, schema_name.length());
     std::replace(timestamp.begin(), timestamp.end(), '-', '_');
     timestamp.insert(0, "s");
-    txn_.exec("CREATE SCHEMA IF NOT EXISTS " + timestamp + ";");
-    schema_name_ = timestamp;
+    try {
+        txn_.exec("CREATE SCHEMA IF NOT EXISTS " + timestamp + ";");
+        schema_name_ = timestamp;
+        return true;
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
     return true;
 }
 
