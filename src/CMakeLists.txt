@@ -28,6 +28,7 @@ set(SRCS
     simcontrol/SimUtils.cpp
     common/DelayedTask.cpp
     common/ExponentialFilter.cpp
+    common/Postgres.cpp
 )
 
 ADD_LIBRARY( ${LIBRARY_NAME} SHARED
@@ -48,7 +49,7 @@ target_link_libraries(
   ${GeographicLib_LIBRARIES}
   scrimmage-msgs
   ${CMAKE_DL_LIBS}
-  mysqlcppconn
+  pqxx
 )
 
 SET (_soversion ${LIB_MAJOR}.${LIB_MINOR}.${LIB_RELEASE})

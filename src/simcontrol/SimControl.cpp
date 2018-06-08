@@ -66,6 +66,8 @@
 
 #include <scrimmage/msgs/Event.pb.h>
 
+#include <scrimmage/common/Postgres.h>
+
 #include <iostream>
 #include <string>
 #include <memory>
@@ -78,12 +80,12 @@
 #include <boost/range/algorithm/for_each.hpp>
 
 
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <cppconn/prepared_statement.h>
-#include <stdlib.h>
+// #include <cppconn/driver.h>
+// #include <cppconn/exception.h>
+// #include <cppconn/resultset.h>
+// #include <cppconn/statement.h>
+// #include <cppconn/prepared_statement.h>
+// #include <stdlib.h>
 
 namespace sc = scrimmage;
 namespace sp = scrimmage_proto;
@@ -1288,18 +1290,10 @@ bool SimControl::output_runtime() {
 }
 
 bool SimControl::output_summary() {
-
-    sql::Driver* driver = get_driver_instance();
-    const std::string user("root");
-    const std::string pass("scrimmage");
-    const std::string url("localhost");
-    std::auto_ptr<sql::Connection> con(driver->connect(url, user, pass));
-    std::auto_ptr<sql::Statement> stmt(con->createStatement());
-    stmt->execute("CREATE DATABASE IF NOT EXISTS scrimmage;");
-    stmt->execute("USE scrimmage;");
-    stmt->execute("CREATE TABLE straight_test_summary (team INT, score DOUBLE);");
+    sc::Postgres pg("scrimmage", "scrimmage", "scrimmage");
 
 
+    pg.create_schema(mp_->log_dir());
 
     std::map<int, double> team_scores;
     std::map<int, std::map<std::string, double>> team_metrics;
