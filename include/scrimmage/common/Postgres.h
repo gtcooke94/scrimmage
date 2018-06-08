@@ -49,6 +49,9 @@ class Postgres {
      ~Postgres();
 
      bool create_schema(std::string schema_name);
+     bool create_summary_table(const std::list<std::string> & headers);
+     bool create_table(const std::list<std::string> & columns, const
+             std::list<std::string> & types, const std::string & table_name);
 
  protected:
      pqxx::connection conn_;

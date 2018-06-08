@@ -42,6 +42,8 @@ namespace scrimmage {
 
 Postgres::~Postgres() {
     txn_.exec("commit;");
+    // TODO: Figure out the right way to disconnect and stuff
+    // txn_.disconnect();
 }
 
 Postgres::Postgres(string dbname, string user, string password)
@@ -62,5 +64,50 @@ bool Postgres::create_schema(string schema_name) {
     }
     return true;
 }
+
+bool Postgres::create_summary_table(const std::list<std::string> & headers) {
+
+    // TODO, how to get the types for the headers? This is, in general, a
+    // problem
+    return true;
+}
+
+bool Postgres::create_table(const std::list<std::string> & columns, const
+        std::list<std::string> & types, const std::string & table_name) {
+    string query = "CREATE TABLE " +  table_name + " ";
+    auto it1 = columns.begin();
+    auto it2 = types.begin();
+    for (; it1 != columns.end() && it2 != types.end(); ++it1, ++it2) {
+        query += "("
+        + *it1 + " " + *it2 + "), ";
+    }
+    query.pop_back();
+    query.pop_back();
+    query.pop_back();
+    txn_.exec(query);
+    return true;
+}
+
+    // Here's how we write the csv in SimControl right now
+    // for (auto const &team_str_double : team_metrics) {
+
+        // // Each line starts with team_id,score
+        // csv_str += std::to_string(team_str_double.first);
+        // csv_str += "," + std::to_string(team_scores[team_str_double.first]);
+
+        // // Loop over all possible headers, if the header doesn't exist for
+        // // a specific team, default the value for that header to zero.
+        // for (std::string header : headers) {
+            // csv_str += ",";
+
+            // auto it = team_str_double.second.find(header);
+            // if (it != team_str_double.second.end()) {
+                // csv_str += std::to_string(it->second);
+            // } else {
+                // csv_str += std::to_string(0.0);
+            // }
+        // }
+        // csv_str += "\n";
+    // }
 
 } // namespace scrimmage

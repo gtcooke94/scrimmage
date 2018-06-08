@@ -1334,6 +1334,9 @@ bool SimControl::output_summary() {
     }
     csv_str += "\n";
 
+    // Send the headers to Postgres
+    pg.create_summary_table(headers);
+
     // Loop over each team and generate csv output
     for (auto const &team_str_double : team_metrics) {
 
