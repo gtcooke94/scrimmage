@@ -52,6 +52,11 @@ class Postgres {
      bool create_summary_table(const std::list<std::string> & headers);
      bool create_table(const std::list<std::string> & columns, const
              std::list<std::string> & types, const std::string & table_name);
+     bool insert(const std::list<std::string> & columns, const
+        std::list<std::string> & values, const std::string & table_name);
+     bool prepare_summary_insert(const std::list<std::string> & columns);
+     bool insert_into_summary(const std::map<int, std::map<std::string, double>>
+             & team_metrics, const std::map<int, double> & team_scores);
 
  protected:
      pqxx::connection conn_;

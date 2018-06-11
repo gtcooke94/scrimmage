@@ -41,7 +41,7 @@ using std::string;
 namespace scrimmage {
 
 Postgres::~Postgres() {
-    txn_.exec("commit;");
+    // txn_.exec("commit;");
     // TODO: Figure out the right way to disconnect and stuff
     // txn_.disconnect();
 }
@@ -68,23 +68,73 @@ bool Postgres::create_schema(string schema_name) {
 bool Postgres::create_summary_table(const std::list<std::string> & headers) {
 
     // TODO, how to get the types for the headers? This is, in general, a
-    // problem
+    // problem. Can assume the user knows how to supply it
     return true;
 }
 
 bool Postgres::create_table(const std::list<std::string> & columns, const
         std::list<std::string> & types, const std::string & table_name) {
-    string query = "CREATE TABLE " +  table_name + " ";
+    string query = "CREATE TABLE " +  schema_name_ + "." + table_name +
+        "(team_id INT PRIMARY KEY, score DOUBLE PRECISION, ";
     auto it1 = columns.begin();
     auto it2 = types.begin();
     for (; it1 != columns.end() && it2 != types.end(); ++it1, ++it2) {
-        query += "("
-        + *it1 + " " + *it2 + "), ";
+        query += *it1 + " " + *it2 + ", ";
     }
     query.pop_back();
     query.pop_back();
-    query.pop_back();
+    query += ");";
     txn_.exec(query);
+    txn_.exec("commit;");
+    return true;
+}
+
+bool Postgres::insert(const std::list<std::string> & columns, const
+        std::list<std::string> & values, const std::string & table_name) {
+    auto it1 = columns.begin();
+    auto it2 = values.begin();
+    string query = "INSERT INTO " + table_name + "VALUES (";
+    for (; it2 != values.end(); ++it2) {
+        query += *it2 + ", ";
+    }
+    query.pop_back();
+    query.pop_back();
+    query += ");";
+    txn_.exec(query);
+    txn_.exec("commit;");
+    return true;
+}
+
+bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
+    string query = "INSERT INTO summary VALUES (";
+    int i = 0;
+    for (auto col: columns) {
+        query += "$" + std::to_string(i) + ", ";
+        i++;
+    }
+    query.pop_back();
+    query.pop_back();
+    query += ");";
+    conn_.prepare("summary_insert", query);
+    return true;
+}
+
+bool Postgres::insert_into_summary(const std::map<int, std::map<std::string,
+        double>> & team_metrics, const std::map<int, double> & team_scores) {
+    pqxx::tablewriter table_writer(txn_, "summary");
+    std::vector<string> values;
+    for (auto team_metric: team_metrics) {
+        values.push_back(std::to_string(team_metric.first));
+        values.push_back(std::to_string(team_scores.at(team_metric.first)));
+        for (auto metric_vals: team_metric.second) {
+            values.push_back(std::to_string(metric_vals.second));
+        }
+        table_writer.insert(values);
+        values.clear();
+    }
+    table_writer.complete();
+    txn_.exec("commit;");
+
     return true;
 }
 
