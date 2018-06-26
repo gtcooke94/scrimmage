@@ -40,6 +40,7 @@ using std::string;
 
 namespace scrimmage {
 
+// TODO: Replace global txn_ with a local copy for each important transaction
 Postgres::~Postgres() {
     // txn_.exec("commit;");
     // TODO: Figure out the right way to disconnect and stuff
@@ -133,9 +134,17 @@ bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
 bool Postgres::insert_into_table(const std::map<string, std::map<std::string,
         std::string>> & rows, const std::string & table_name) {
     // Generalized inserting into table
-    // Assume we get a map with row key/identifier: values in a map with their
+    // Assume we get a map with (row key/identifier: (map with column name:
+    // value) in a map with their
     // column names
-
+    // Or should we be unsafe and assume that people will order their vectors
+    // correctly and not deal with maps, since we have to go to vectors anyways
+    // in the end?
+    // For example as it stands right now, ground_coll is in different places
+    // when creating the table vs. when bring in the values from the map
+    pqxx::work insert_txn(conn_);
+    std::vector<string> values;
+    pqxx::tablewriter table_writer(insert_txn, schema_name_ + "." + table_name);
     return true;
 }
 
