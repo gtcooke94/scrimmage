@@ -109,6 +109,7 @@ bool Postgres::insert(const std::list<std::string> & columns, const
     return true;
 }
 
+// Currently unused
 bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
     string query = "INSERT INTO summary (";
     int i = 1;
@@ -126,6 +127,15 @@ bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
     query.pop_back();
     query += ");";
     conn_.prepare("summary_insert", query);
+    return true;
+}
+
+bool Postgres::insert_into_table(const std::map<string, std::map<std::string,
+        std::string>> & rows, const std::string & table_name) {
+    // Generalized inserting into table
+    // Assume we get a map with row key/identifier: values in a map with their
+    // column names
+
     return true;
 }
 

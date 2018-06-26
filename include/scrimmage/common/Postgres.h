@@ -58,6 +58,8 @@ class Postgres {
      bool prepare_summary_insert(const std::list<std::string> & columns);
      bool insert_into_summary(const std::map<int, std::map<std::string, double>>
              & team_metrics, const std::map<int, double> & team_scores);
+     bool insert_into_table(const std::map<std::string,
+             std::map<std::string, std::string>> & rows, const std::string & table_name);
 
  protected:
      pqxx::connection conn_;
