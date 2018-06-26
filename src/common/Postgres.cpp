@@ -132,22 +132,21 @@ bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
 bool Postgres::insert_into_summary(const std::map<int, std::map<std::string,
         double>> & team_metrics, const std::map<int, double> & team_scores) {
     // Hard coded 8 table, we need to actually keep track of this though.
-    const int num_elements = 8;
-    std::array<string, num_elements> vals;
     pqxx::tablewriter table_writer(txn_, schema_name_ + ".summary");
     std::vector<string> values;
     for (auto team_metric: team_metrics) {
-        int i = 0;
-        vals[i] = std::to_string(team_metric.first);
-        i++;
-        vals[i] = std::to_string(team_scores.at(team_metric.first));
         values.push_back(std::to_string(team_metric.first));
         values.push_back(std::to_string(team_scores.at(team_metric.first)));
-        for (auto metric_vals: team_metric.second) {
-            i++;
-            vals[i] = std::to_string(metric_vals.second);
-            values.push_back(std::to_string(metric_vals.second));
+        for (auto col: tables_columns_.at("summary")) {
+            if (!(col == "team_id" || col == "score")) {
+                values.push_back(std::to_string(team_metric.second.at(col)));
+            }
+            // values.push_back(std::to_string(metric_vals.second));
         }
+        // for (auto metric_vals: team_metric.second) {
+            // i++;
+            // values.push_back(std::to_string(metric_vals.second));
+        // }
         table_writer.insert(values);
         // table_writer.insert(vals);
         values.clear();
