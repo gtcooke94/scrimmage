@@ -40,6 +40,7 @@
 #include <string>
 #include <utility>
 #include <memory>
+#include <vector>
 
 namespace scrimmage {
 
@@ -60,9 +61,11 @@ class Postgres {
 
  protected:
      pqxx::connection conn_;
-     pqxx::nontransaction txn_;
-
+     // pqxx::nontransaction ntxn_;
+     pqxx::work txn_;
+     template<class T> pqxx::prepare::invocation& prep_dynamic(std::vector<T> data, pqxx::prepare::invocation& inv);
      std::string schema_name_;
+     std::map<std::string, std::vector<std::string>> tables_columns_;
 };
 } // namespace scrimmage
 

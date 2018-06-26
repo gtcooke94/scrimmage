@@ -47,7 +47,8 @@ Postgres::~Postgres() {
 }
 
 Postgres::Postgres(string dbname, string user, string password)
-    : conn_("dbname=" + dbname + " user=" + user + " password=" + password), txn_(conn_) {}
+    : conn_("dbname=" + dbname + " user=" + user + " password=" + password),
+    txn_(conn_) {}
 
 bool Postgres::create_schema(string schema_name) {
     std::size_t last_dash_pos = schema_name.find_last_of("/");
@@ -75,11 +76,14 @@ bool Postgres::create_summary_table(const std::list<std::string> & headers) {
 bool Postgres::create_table(const std::list<std::string> & columns, const
         std::list<std::string> & types, const std::string & table_name) {
     string query = "CREATE TABLE " +  schema_name_ + "." + table_name +
-        "(team_id INT PRIMARY KEY, score DOUBLE PRECISION, ";
+        " (team_id INT PRIMARY KEY, score DOUBLE PRECISION, ";
+    tables_columns_["summary"].push_back("team_id");
+    tables_columns_.at("summary").push_back("score");
     auto it1 = columns.begin();
     auto it2 = types.begin();
     for (; it1 != columns.end() && it2 != types.end(); ++it1, ++it2) {
         query += *it1 + " " + *it2 + ", ";
+        tables_columns_.at("summary").push_back(*it1);
     }
     query.pop_back();
     query.pop_back();
@@ -106,9 +110,15 @@ bool Postgres::insert(const std::list<std::string> & columns, const
 }
 
 bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
-    string query = "INSERT INTO summary VALUES (";
-    int i = 0;
-    for (auto col: columns) {
+    string query = "INSERT INTO summary (";
+    int i = 1;
+    for (auto col: tables_columns_.at("summary")) {
+        query += col + ", ";
+    }
+    query.pop_back();
+    query.pop_back();
+    query += ") VALUES (";
+    for (auto col: tables_columns_.at("summary")) {
         query += "$" + std::to_string(i) + ", ";
         i++;
     }
@@ -121,21 +131,47 @@ bool Postgres::prepare_summary_insert(const std::list<std::string> & columns) {
 
 bool Postgres::insert_into_summary(const std::map<int, std::map<std::string,
         double>> & team_metrics, const std::map<int, double> & team_scores) {
-    pqxx::tablewriter table_writer(txn_, "summary");
+    // Hard coded 8 table, we need to actually keep track of this though.
+    const int num_elements = 8;
+    std::array<string, num_elements> vals;
+    pqxx::tablewriter table_writer(txn_, schema_name_ + ".summary");
     std::vector<string> values;
     for (auto team_metric: team_metrics) {
+        int i = 0;
+        vals[i] = std::to_string(team_metric.first);
+        i++;
+        vals[i] = std::to_string(team_scores.at(team_metric.first));
         values.push_back(std::to_string(team_metric.first));
         values.push_back(std::to_string(team_scores.at(team_metric.first)));
         for (auto metric_vals: team_metric.second) {
+            i++;
+            vals[i] = std::to_string(metric_vals.second);
             values.push_back(std::to_string(metric_vals.second));
         }
         table_writer.insert(values);
+        // table_writer.insert(vals);
         values.clear();
     }
     table_writer.complete();
-    txn_.exec("commit;");
 
+    // txn_.exec("INSERT INTO summary VALUES (3, 0, 0, 0, 0, 0);");
+    txn_.commit();
+    // Dynamic statement prep
+    // https://stackoverflow.com/questions/31833322/how-to-prepare-statements-and-bind-parameters-in-postgresql-for-c
+    // pqxx::prepare::invocation w_invocation = txn_.prepared("summary_insert");
+    // prep_dynamic(values, w_invocation);
+    // auto res = w_invocation.exec();
+
+    // txn_.exec("commit;");
     return true;
+// Try this? https://stackoverflow.com/questions/43922809/libpq-how-to-pass-bulk-data
+}
+
+template<class T> pqxx::prepare::invocation&
+Postgres::prep_dynamic(std::vector<T> data, pqxx::prepare::invocation& inv) {
+    for (auto data_val : data)
+        inv(data_val);
+    return inv;
 }
 
     // Here's how we write the csv in SimControl right now

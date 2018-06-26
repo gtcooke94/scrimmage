@@ -1418,6 +1418,7 @@ bool SimControl::output_summary() {
         "DOUBLE PRECISION", "DOUBLE PRECISION", "DOUBLE PRECISION"};
     std::string summary_table_name = "summary";
     pg.create_table(headers, header_types, summary_table_name);
+    pg.prepare_summary_insert(headers);
     pg.insert_into_summary(team_metrics, team_scores);
 
     // Loop over each team and generate csv output
