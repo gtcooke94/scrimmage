@@ -10,7 +10,7 @@ WORKDIR /root
 #install ros
 #see here: http://wiki.ros.org/kinetic/Installation/Ubuntu
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > /etc/apt/sources.list.d/ros-latest.list'
-RUN apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
 RUN apt-get update
 RUN apt-get install -y ros-kinetic-desktop-full
 RUN rosdep init && rosdep update
@@ -43,7 +43,9 @@ RUN pip install cpplint
 
 RUN pip install protobuf==3.3.0 grpcio==1.2.1
 
-RUN apt install -y ros-kinetic-mrpt-navigation
+#RUN apt install -y ros-kinetic-mrpt-local-obstacles \
+#    ros-kinetic-mrpt-localization ros-kinetic-mrpt-map \
+#    ros-kinetic-mrpt-rawlog ros-kinetic-mrpt-reactivenav2d
 
 # Copy repo code into image
 RUN mkdir -p /root/scrimmage/scrimmage

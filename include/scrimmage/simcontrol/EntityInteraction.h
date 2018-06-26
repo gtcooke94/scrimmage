@@ -59,26 +59,11 @@ class EntityInteraction : public Plugin {
                                                 double /*t*/, double /*dt*/)
     { return false; }
 
-    void close(double /*t*/) override {}
-
     inline virtual bool collision_exists(std::list<EntityPtr> &/*ents*/,
                                   Eigen::Vector3d &/*p*/)
     { return false; }
 
-    inline virtual void set_random(RandomPtr random)
-    { random_ = random; }
-
-    inline virtual void set_mission_parse(MissionParsePtr mp)
-    { mp_ = mp; }
-
-    inline virtual void set_projection(std::shared_ptr<GeographicLib::LocalCartesian> proj)
-    { proj_ = proj;}
-
  protected:
-    std::shared_ptr<GeographicLib::LocalCartesian> proj_;
-
-    RandomPtr random_;
-    MissionParsePtr mp_;
 };
 
 typedef std::shared_ptr<EntityInteraction> EntityInteractionPtr;

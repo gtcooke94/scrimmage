@@ -1,8 +1,3 @@
-if(NOT GRPC_FOUND)
-    message("GRPC not found. Not building RLSimple.")
-    return()
-endif()
-
 #--------------------------------------------------------
 # Library Creation
 #--------------------------------------------------------
@@ -18,9 +13,8 @@ ADD_LIBRARY(${LIBRARY_NAME} SHARED
   )
 
 TARGET_LINK_LIBRARIES(${LIBRARY_NAME}
-  ${GTRI_TACTICS_LIBS}
-  ${SCRIMMAGE_LIBRARIES}
-  ExternalControl_plugin
+  scrimmage-core
+  ScrimmageOpenAIAutonomy_plugin
   )
 
 SET (_soversion ${LIB_MAJOR}.${LIB_MINOR}.${LIB_RELEASE})

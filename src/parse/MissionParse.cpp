@@ -653,7 +653,9 @@ bool MissionParse::create_log_dir() {
         fs::create_directory_symlink(fs::path(log_dir_), latest_sym, ec);
         if (fs_err()) {
             cout << "WARNING: Unable to create latest log file symlink" << endl;
-            cout << "Couldn't create symlink log directory" << endl;
+            cout << "Couldn't create symlink log directory: "
+                 << latest_sym.string() << " -> "
+                 << fs::path(log_dir_).string() << endl;
             print_error();
         }
     }
@@ -831,4 +833,9 @@ std::string MissionParse::get_mission_filename() {
 void MissionParse::set_enable_gui(bool enable) {enable_gui_ = enable;}
 
 void MissionParse::set_time_warp(double warp) {time_warp_ = warp;}
+
+void MissionParse::set_network_gui(bool enable) {network_gui_ = enable;}
+
+void MissionParse::set_start_paused(bool paused) {start_paused_ = paused;}
 } // namespace scrimmage
+

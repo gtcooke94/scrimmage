@@ -43,7 +43,6 @@
 #include <scrimmage/plugin_manager/PluginManager.h>
 #include <scrimmage/proto/ProtoConversions.h>
 #include <scrimmage/sensor/Sensor.h>
-#include <scrimmage/sensor/Sensable.h>
 #include <scrimmage/simcontrol/SimUtils.h>
 
 #include <iostream>
@@ -233,7 +232,7 @@ bool Entity::init(AttributeMap &overrides,
             << " does not provide inputs required by MotionModel "
             << std::quoted(motion_model_->name())
             << ": ";
-        print_io_error(motion_model_->name(), controller_->name(), motion_model_->vars());
+        print_io_error(motion_model_->name(), motion_model_->vars());
         return false;
     }
 
@@ -283,7 +282,7 @@ bool Entity::init(AttributeMap &overrides,
         br::copy(autonomies_ | ba::transformed(get_name), out_it);
         std::cout << "as follows " << std::endl;
 
-        print_io_error(controller_->name(), "An Autonomy", controller_->vars());
+        print_io_error(controller_->name(), controller_->vars());
         return false;
     }
 
@@ -390,6 +389,7 @@ std::shared_ptr<GeographicLib::LocalCartesian> Entity::projection()
 
 MissionParsePtr Entity::mp() { return mp_; }
 
+void Entity::set_mp(MissionParsePtr mp) { mp_ = mp; }
 void Entity::set_random(RandomPtr random) { random_ = random; }
 
 RandomPtr Entity::random() { return random_; }
@@ -487,6 +487,23 @@ void Entity::close(double t) {
     if (motion_model_) {
         motion_model_->close(t);
     }
+
+    visual_ = nullptr;
+    controller_ = nullptr;
+    autonomies_.clear();
+    mp_ = nullptr;
+    proj_ = nullptr;
+    random_ = nullptr;
+    state_ = nullptr;
+    properties_.clear();
+    sensors_.clear();
+    services_.clear();
+    contacts_ = nullptr;
+    rtree_ = nullptr;
+    plugin_manager_ = nullptr;
+    file_search_ = nullptr;
+    pubsub_ = nullptr;
+    time_ = nullptr;
 }
 
 std::unordered_map<std::string, MessageBasePtr> &Entity::properties() {
@@ -524,4 +541,10 @@ ControllerPtr Entity::init_controller(
     return controller;
 }
 
+void Entity::set_time_ptr(TimePtr t) {time_ = t;}
+
+// cppcheck-suppress passedByValue
+void Entity::set_projection(std::shared_ptr<GeographicLib::LocalCartesian> proj) {
+    proj_ = proj;
+}
 } // namespace scrimmage

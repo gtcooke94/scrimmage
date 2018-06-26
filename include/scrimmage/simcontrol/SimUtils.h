@@ -35,6 +35,8 @@
 
 #include <scrimmage/fwd_decl.h>
 
+
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <list>
@@ -45,7 +47,7 @@ template <class T> class optional;
 }
 
 namespace scrimmage {
-
+class SimControl;
 struct SimUtilsInfo {
     MissionParsePtr mp;
     PluginManagerPtr plugin_manager;
@@ -53,12 +55,12 @@ struct SimUtilsInfo {
     RTreePtr rtree;
     PubSubPtr pubsub;
     TimePtr time;
+    RandomPtr random;
     std::shared_ptr<std::unordered_map<int, int>> id_to_team_map;
     std::shared_ptr<std::unordered_map<int, EntityPtr>> id_to_ent_map;
 };
 
 bool create_ent_inters(const SimUtilsInfo &info,
-                       RandomPtr random,
                        std::list<scrimmage_proto::ShapePtr> &shapes,
                        std::list<EntityInteractionPtr> &ent_inters);
 
@@ -66,11 +68,18 @@ bool create_metrics(const SimUtilsInfo &info, std::list<MetricsPtr> &metrics_lis
 
 void run_callbacks(PluginPtr plugin);
 
-void print_io_error(const std::string &in_name, const std::string &out_name, VariableIO &v);
+void print_io_error(const std::string &in_name, VariableIO &v);
 
 bool verify_io_connection(VariableIO &output_plugin, VariableIO &input_plugin);
 
 boost::optional<std::string> run_test(std::string mission);
+
+bool logging_logic(MissionParsePtr mp, std::string s);
+
+std::shared_ptr<Log> preprocess_scrimmage(MissionParsePtr mp, SimControl &simcontrol);
+
+boost::optional<std::string> postprocess_scrimmage(
+      MissionParsePtr mp, SimControl &simcontrol, std::shared_ptr<Log> &log);
 
 bool check_output(std::string output_type, std::string desired_output);
 

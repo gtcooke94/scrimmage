@@ -15,11 +15,7 @@ endif()
 
 project (scrimmage)
 
-set(SCRIMMAGE_VERSION_MAJOR "0")
-set(SCRIMMAGE_VERSION_MINOR "0")
-set(SCRIMMAGE_VERSION_PATCH "0")
-set(SCRIMMAGE_VERSION "${SCRIMMAGE_VERSION_MAJOR}.${SCRIMMAGE_VERSION_MINOR}.${SCRIMMAGE_VERSION_PATCH}")
-set(SCRIMMAGE_VERSION_DATE "2012.12.30")
+set(PROJECT_VERSION "0.2.0-dev")
 
 # give SCRIMMAGE 1 series a few more soversions
 set(SCRIMMAGE_SOVERSION "00")
@@ -45,6 +41,7 @@ set(SCRIMMAGE_PYTHON_DIR ${CMAKE_SOURCE_DIR}/python)
 
 include(MacroAddExternalTarget)
 include(MacroSubDirList)
+include(FindPythonModule)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
@@ -109,6 +106,10 @@ if (ENABLE_PYTHON_BINDINGS)
   set(PYBIND11_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS})
   include_directories("${PYTHON_INCLUDE_DIRS}")
 
+  add_library(scrimmage-python INTERFACE)
+  target_include_directories(scrimmage-python INTERFACE ${PYTHON_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS})
+  target_link_libraries(scrimmage-python INTERFACE ${PYTHON_LIBRARIES})
+  install(TARGETS scrimmage-python EXPORT ${PROJECT_NAME}-targets)
 else()
   add_definitions(-DENABLE_PYTHON_BINDINGS=0)
 endif()
@@ -214,18 +215,22 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 # Find Boost
 ########################################################
 #set(Boost_DEBUG ON)
-find_package(Boost COMPONENTS thread date_time iostreams program_options regex
+find_package(Boost 1.55 COMPONENTS thread date_time iostreams program_options regex
   filesystem system graph REQUIRED)
-
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+add_library(scrimmage-boost INTERFACE)
+target_include_directories(scrimmage-boost INTERFACE ${Boost_INCLUDE_DIRS})
+target_link_libraries(scrimmage-boost INTERFACE ${Boost_LIBRARIES})
+install(TARGETS scrimmage-boost EXPORT ${PROJECT_NAME}-targets)
 
 ########################################################
 # Find OpenCV
 ########################################################
 find_package(OpenCV QUIET)
 if (OpenCV_FOUND)
-  add_definitions(-DENABLE_OPENCV=1)
-  include_directories(${OpenCV_INCLUDE_DIRS})
+  add_library(scrimmage-opencv INTERFACE)
+  target_include_directories(scrimmage-opencv INTERFACE ${OpenCV_INCLUDE_DIRS})
+  target_compile_definitions(scrimmage-opencv INTERFACE -DENABLE_OPENCV=1)
+  install(TARGETS scrimmage-opencv EXPORT ${PROJECT_NAME}-targets)
 else()
   add_definitions(-DENABLE_OPENCV=0)
 endif()
@@ -323,7 +328,6 @@ endif()
 ###############################################################################
 # Installation
 ###############################################################################
-set(PROJECT_VERSION ${SCRIMMAGE_VERSION})
 set(PROJECT_DESCRIPTION "A multi-agent simulator")
 
 if (UNIX AND NOT APPLE)
@@ -359,6 +363,7 @@ if (UNIX AND NOT APPLE)
 
   # Add all library targets to the build-tree export set
   export(TARGETS ${PROJECT_LIBS} ${PROJECT_PLUGINS}
+         scrimmage-boost scrimmage-python scrimmage-opencv
     FILE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-targets.cmake")
 
   # Export the package for use from the build-tree
@@ -403,7 +408,7 @@ if (UNIX AND NOT APPLE)
   #############################################################################
   # Install Targets
   #############################################################################
-  # Install all mission XML files under etc
+  # Install all mission XML files under share
   install(
     DIRECTORY missions
     DESTINATION share/${PROJECT_NAME}
@@ -451,8 +456,7 @@ endif()
 ###############################################################################
 # Binary installation generation
 ###############################################################################
-set(VERSION "0.0.1")
-set(CPACK_PACKAGE_VERSION ${VERSION})
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SCRIMMAGE")
 set(CPACK_GENERATOR "DEB")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})

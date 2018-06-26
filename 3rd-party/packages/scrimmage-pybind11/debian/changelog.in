@@ -1,5 +1,0 @@
-scrimmage-pybind11 (@ARG_SOURCE_VERSION@~test1604+1) xenial-test-unstable; urgency=medium
-
-  * Initial upload!
-
- -- Kevin DeMarco <kevin.demarco@gmail.com>  @DATE_STRING@
