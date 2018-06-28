@@ -1,10 +1,25 @@
 """Copies csv files after a scrimmage run to a postgres database."""
+import argparse
 import os.path
-import csv
 import psycopg2
 from psycopg2 import sql
-import pdb
+#  import pdb
 #  from psycopg2 import sql
+
+# We need a log directory and datatypes fed to us
+# example:
+# python csv_to_postgres.py ~/.scrimmage/logs/2018-06-28_09-41-11/ "DOUBLE
+# PRECISION" "TEXT" "INT"
+parser = argparse.ArgumentParser()
+parser.add_argument("log_dir")
+parser.add_argument("data_types", nargs="*")
+args = parser.parse_args()
+#  pdb.set_trace()
+#  args = parser.parse_known_args(["log_dir"])
+log_dir = args.log_dir
+data_types = args.data_types
+#  pdb.set_trace()
+#  print(args.log_dir)
 
 # Connect to existing database
 conn = psycopg2.connect("dbname=scrimmage user=scrimmage password=scrimmage")
@@ -16,7 +31,7 @@ cur = conn.cursor()
 
 # Assume we pass through tables, columns, datatypes that we want
 # Build the table
-log_dir = '~/.scrimmage/logs/2018-06-28_09-41-11/'
+#  log_dir = '~/.scrimmage/logs/2018-06-28_09-41-11/'
 timestamp = os.path.basename(os.path.dirname(log_dir))
 timestamp = timestamp.replace('-', '_')
 schema = 's' + timestamp
@@ -27,16 +42,17 @@ conn.commit()
 # the log directory
 table = 'summary'
 full_table = "{}.{}".format(schema, table)
-data_types = [
-    "INT PRIMARY KEY", "DOUBLE PRECISION",
-    "DOUBLE PRECISION", "DOUBLE PRECISION", "DOUBLE PRECISION",
-    "DOUBLE PRECISION", "DOUBLE PRECISION", "DOUBLE PRECISION"]
+#  data_types = [
+#  "INT PRIMARY KEY", "DOUBLE PRECISION",
+#  "DOUBLE PRECISION", "DOUBLE PRECISION", "DOUBLE PRECISION",
+#  "DOUBLE PRECISION", "DOUBLE PRECISION", "DOUBLE PRECISION"]
+
 #  query = 'CREATE TABLE ' + schema + "." + table_name + "( "
 # for (col, data_type) in zip(columns, data_types):
 
 # Actually copy all of the data
-with open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv', 'r') as f:
-#  f = open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv', 'r')
+with open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv',
+          'r') as f:
     # Notice that we don't need the `csv` module.
     # next(f)  # Skip the header row.
     cols = f.readline()
