@@ -16,7 +16,7 @@ cur = conn.cursor()
 
 # Assume we pass through tables, columns, datatypes that we want
 # Build the table
-log_dir = '~/.scrimmage/logs/2018-06-27_14-22-24/'
+log_dir = '~/.scrimmage/logs/2018-06-28_09-41-11/'
 timestamp = os.path.basename(os.path.dirname(log_dir))
 timestamp = timestamp.replace('-', '_')
 schema = 's' + timestamp
@@ -36,9 +36,10 @@ data_types = [
 
 # Actually copy all of the data
 with open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv', 'r') as f:
+#  f = open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv', 'r')
     # Notice that we don't need the `csv` module.
     # next(f)  # Skip the header row.
-    cols = next(f)
+    cols = f.readline()
     cols = cols.splitlines()[0]
     cols = cols.split(',')
     query_string = 'CREATE TABLE {} '.format(full_table)
@@ -48,6 +49,10 @@ with open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv', 'r') 
     to_join = "({});".format(to_join)
     query_string = query_string + to_join
     query = sql.SQL(query_string)
+    cur.execute(query)
+    #  cur = conn.cursor()
     pdb.set_trace()
 
     cur.copy_from(f, "{}".format(full_table), sep=',')
+    conn.commit()
+    #  f.close()
