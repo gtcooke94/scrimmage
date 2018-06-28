@@ -22,6 +22,11 @@ data_types = args.data_types
 
 # Connect to existing database
 connect_string = "dbname=scrimmage user=scrimmage password=scrimmage"
+files = glob.glob(log_dir + "*.csv")
+if len(files) == 0:
+    print("No csv files found, exiting without doing creating anything in the"
+          " database")
+    exit()
 with psycopg2.connect(connect_string) as conn:
 
     # Open cursor to perform operations
@@ -50,7 +55,6 @@ with psycopg2.connect(connect_string) as conn:
     # for (col, data_type) in zip(columns, data_types):
 
     # Actually copy all of the data
-    files = glob.glob(log_dir + "*.csv")
     for fi in files:
         with open(fi, 'r') as f:
             # Notice that we don't need the `csv` module.
