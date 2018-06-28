@@ -67,7 +67,7 @@ with open('/home/gcooke3/.scrimmage/logs/2018-06-27_14-23-09/summary.csv',
     query = sql.SQL(query_string)
     cur.execute(query)
     #  cur = conn.cursor()
-    pdb.set_trace()
+    #  pdb.set_trace()
 
     cur.copy_from(f, "{}".format(full_table), sep=',')
     conn.commit()
