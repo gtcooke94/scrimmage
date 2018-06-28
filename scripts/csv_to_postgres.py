@@ -2,7 +2,7 @@
 import argparse
 import os.path
 import glob
-import pdb
+#  import pdb
 import psycopg2
 from psycopg2 import sql
 #  from psycopg2 import sql
@@ -62,12 +62,12 @@ with psycopg2.connect(connect_string) as conn:
             cols = cols.split(',')
             # could get datatypes with
             # ["DOUBLE PRECISION" for i in range(0, len(cols)]
-            query_string = sql.SQL('CREATE TABLE {} ').format(sql.SQL(full_table))
-            to_join = ''.join([col + ' ' + data_type + ', ' for col, data_type in
-                               zip(cols, data_types)])
+            query_s = sql.SQL('CREATE TABLE {}').format(sql.SQL(full_table))
+            to_join = ''.join([col + ' ' + data_type + ', ' for col, data_type
+                               in zip(cols, data_types)])
             to_join = to_join[:-2]
             to_join_sql = sql.SQL("({});").format(sql.SQL(to_join))
-            query = query_string + to_join_sql
+            query = query_s + to_join_sql
             #  query = sql.SQL(query_string)
             with conn.cursor() as cur:
                 cur.execute(query)
