@@ -2,7 +2,7 @@
 import argparse
 import os.path
 import glob
-#  import pdb
+import pdb
 import psycopg2
 from psycopg2 import sql
 #  from psycopg2 import sql
@@ -61,7 +61,13 @@ with psycopg2.connect(connect_string) as conn:
             cols = cols.splitlines()[0]
             cols = cols.split(',')
             # could get datatypes with
-            # ["DOUBLE PRECISION" for i in range(0, len(cols)]
+            #  pdb.set_trace()
+            if len(data_types) != len(cols):
+                data_types = ["TEXT" for i in range(0, len(cols))]
+                print("Not enough Postgres datatypes specified for {} table,"
+                      " defaulting to all TEXT".format(table))
+
+            # ["DOUBLE PRECISION" for i in range(0, len(cols))]
             query_s = sql.SQL('CREATE TABLE {}').format(sql.SQL(full_table))
             to_join = ''.join([col + ' ' + data_type + ', ' for col, data_type
                                in zip(cols, data_types)])
@@ -70,7 +76,9 @@ with psycopg2.connect(connect_string) as conn:
             query = query_s + to_join_sql
             #  query = sql.SQL(query_string)
             with conn.cursor() as cur:
-                cur.execute(query)
+                res = cur.execute(query)
+                pdb.set_trace()
+
                 cur.copy_from(f, "{}".format(full_table), sep=',')
                 # conn.commit()
 conn.close()
