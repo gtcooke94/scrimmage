@@ -2,7 +2,7 @@
 import argparse
 import os.path
 import glob
-import pdb
+#  import pdb
 import psycopg2
 from psycopg2 import sql
 #  from psycopg2 import sql
@@ -11,9 +11,11 @@ from psycopg2 import sql
 # example:
 # python csv_to_postgres.py ~/.scrimmage/logs/2018-06-28_09-41-11/ "DOUBLE
 # PRECISION" "TEXT" "INT"
-parser = argparse.ArgumentParser()
-parser.add_argument("log_dir")
-parser.add_argument("data_types", nargs="*")
+parser = argparse.ArgumentParser(
+    description='''Moves a the .csv files from a scrimmage log folder a
+    postgres database''')
+parser.add_argument("log_dir", help='The log directory, for example ~/.scrimmage/logs/2018-06-28_09-41-11/')
+parser.add_argument("data_types", nargs="*", help='We assume all TEXT datatypes for now while we architect a better solution for inputting datatypes')
 args = parser.parse_args()
 #  args = parser.parse_known_args(["log_dir"])
 log_dir = args.log_dir
@@ -65,7 +67,6 @@ with psycopg2.connect(connect_string) as conn:
             cols = cols.splitlines()[0]
             cols = cols.split(',')
             # could get datatypes with
-            #  pdb.set_trace()
             if len(data_types) != len(cols):
                 data_types = ["TEXT" for i in range(0, len(cols))]
                 print("Not enough Postgres datatypes specified for {} table,"
@@ -81,7 +82,6 @@ with psycopg2.connect(connect_string) as conn:
             #  query = sql.SQL(query_string)
             with conn.cursor() as cur:
                 res = cur.execute(query)
-                pdb.set_trace()
 
                 cur.copy_from(f, "{}".format(full_table), sep=',')
                 # conn.commit()
