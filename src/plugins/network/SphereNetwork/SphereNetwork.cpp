@@ -67,7 +67,7 @@ bool SphereNetwork::init(std::map<std::string, std::string> &mission_params,
     prob_transmit_ = std::stod(plugin_params.at("prob_transmit"));
     filter_comms_plane_ = std::stoi(plugin_params.at("filter_comms_plane"));
     comms_boundary_altitude_ = std::stod(plugin_params.at("comms_boundary_altitude"));
-    std::cout << "comms_boundary_altitude_ " << comms_boundary_altitude_ << std::endl;
+    comms_boundary_epsilon_ = std::stod(plugin_params.at("comms_boundary_epsilon"));
     return true;
 }
 
@@ -99,8 +99,15 @@ bool SphereNetwork::is_reachable(const scrimmage::PluginPtr &pub_plugin,
     // Look for the subscriber ID
     bool sub_id_found = false;
     for (sc::ID id : neigh) {
-        if (check_planar_boundary(pub_plugin->parent()->state()->pos()[2],
-                    sub_plugin->parent()->state()->pos()[2])) {
+        auto ent_neighbor = id_to_ent_map_->find(id.id());
+        if (ent_neighbor == id_to_ent_map_->end()) {
+            std::cout << "Warning: Sphere Network entity id doesn't exists: "
+                << id.id() << std::endl;
+            continue;
+        }
+        if (filter_comms_plane_ &&
+                within_planar_boundary(pub_plugin->parent()->state()->pos()[2],
+                     ent_neighbor->second->state()->pos()[2])) {
             reachable_map_[pub_id][id.id()] = true;
             if (sub_id == id.id()) {
                 sub_id_found = true;
@@ -119,10 +126,14 @@ bool SphereNetwork::is_successful_transmission(const scrimmage::PluginPtr &pub_p
     return (random_->rng_uniform(0, 1) <= prob_transmit_);
 }
 
-bool SphereNetwork::check_planar_boundary(double z1, double z2) {
-    if (!filter_comms_plane_) { return true; }
-    return (z1 < comms_boundary_altitude_ && comms_boundary_altitude_ < z2) ||
-        (z2 < comms_boundary_altitude_ && comms_boundary_altitude_ < z1);
+// Return true if the plane does not block communications
+bool SphereNetwork::within_planar_boundary(double z1, double z2) {
+    bool both_above = (z1 >= (comms_boundary_altitude_ - comms_boundary_epsilon_))
+        && (z2 >= (comms_boundary_altitude_ - comms_boundary_epsilon_));
+    bool both_below = (z1 <= (comms_boundary_altitude_ + comms_boundary_epsilon_))
+        && (z2 <= (comms_boundary_altitude_ + comms_boundary_epsilon_));
+    return (both_above || both_below);
+
 }
 
 } // namespace network
