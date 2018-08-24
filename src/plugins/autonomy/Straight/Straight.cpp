@@ -43,6 +43,7 @@
 #include <scrimmage/proto/ProtoConversions.h>
 #include <scrimmage/pubsub/Message.h>
 #include <scrimmage/pubsub/Subscriber.h>
+#include <scrimmage/pubsub/Publisher.h>
 #include <scrimmage/sensor/Sensor.h>
 
 #if ENABLE_OPENCV == 1
@@ -141,6 +142,14 @@ void Straight::init(std::map<std::string, std::string> &params) {
     };
     subscribe<State>("LocalNetwork", "NoisyState", state_cb);
 
+
+    // Temp
+    auto test_cb = [&](auto &msg) {std::cout << parent_->id().id() << " recieved msg from " << msg->data << std::endl;};
+    subscribe<double>("SphereNetwork", "test", test_cb);
+
+    pub_test_ = advertise("SphereNetwork", "test");
+
+
 #if (ENABLE_OPENCV == 1 && ENABLE_AIRSIM == 1)
     auto airsim_cb = [&](auto &msg) {
         for (sc::sensor::AirSimSensorType a : msg->data) {
@@ -218,6 +227,12 @@ bool Straight::step_autonomy(double t, double dt) {
     vars_.output(desired_heading_idx_, heading);
 
     noisy_state_set_ = false;
+
+
+    auto msg = std::make_shared<sc::Message<double>>();
+    msg->data = parent_->id().id();
+    pub_test_->publish(msg);
+
     return true;
 }
 } // namespace autonomy

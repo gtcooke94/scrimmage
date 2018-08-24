@@ -45,7 +45,7 @@ include(MacroSubDirList)
 include(FindPythonModule)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
     "Choose the type of build, options are: Debug Release
       RelWithDebInfo MinSizeRel." FORCE)
 endif()

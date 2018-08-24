@@ -72,6 +72,9 @@ class Straight : public scrimmage::Autonomy{
 
     bool noisy_state_set_ = false;
     State noisy_state_;
+
+
+    sc::PublisherPtr pub_test_;
 };
 } // namespace autonomy
 } // namespace scrimmage
