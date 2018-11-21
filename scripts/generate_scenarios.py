@@ -131,7 +131,6 @@ def write_scenarios(df, cls_dict, mission_dir):
     with open(TEMP_MISSION_FILE) as f:
         mission_string = f.read()
     for index, row in df.iterrows():
-        out_name = os.path.join(mission_dir, str(index + 1)) + '.xml'
         this_mission = mission_string
         for var, cls in cls_dict.items():
             this_mission = replace_with_LHS_val(var, this_mission, row[var])
