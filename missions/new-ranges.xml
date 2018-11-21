@@ -3,5 +3,5 @@
 <ranges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"           
     name="SeaSAWparams">
     <MS_gain low="0" high="10" type="float"/>
-    <max_speed low="5" high="25" type="float"/>
+    <max_speed low="15" high="25" type="float"/>
 </ranges>

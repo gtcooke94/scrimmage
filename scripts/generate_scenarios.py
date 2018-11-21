@@ -149,7 +149,7 @@ def replace_with_LHS_val(var, mission_string, val):
     reg = r"\${{{}=(.+?)}}".format(var)
     pattern = re.compile(reg)
     mission_string = pattern.sub(
-            lambda m: m.group().replace(m.group(), "'{}'".format(str(val))),
+            lambda m: m.group().replace(m.group(), "{}".format(str(val))),
             mission_string)
     return mission_string
 
