@@ -92,6 +92,7 @@ def convert(value, type_):
         cls = getattr(module, type_)
     return (cls(value), cls)
 
+
 def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None):
     root = ET.parse(ranges_file).getroot()
     num_of_vars = len(list(root))
@@ -99,7 +100,6 @@ def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None)
     # Build a list of tuples ('tag name', low, high)
     ranges_list = []
     cls_dict = {}
-
 
     for idx, child in enumerate(root):
         try:
@@ -111,16 +111,18 @@ def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None)
         column_name = child.tag
 
         cls_dict[column_name] = cls
-        ranges_list.append((column_name, high, low ))
+        ranges_list.append((column_name, high, low))
 
-        xx[:,idx] = [cls(scale_value(x, 0.0, 1.0, low, high)) for x in xx[:,idx]]
+        xx[:, idx] = [cls(scale_value(x, 0.0, 1.0, low, high)) for x in
+                      xx[:, idx]]
 
     # Build a data frame where the columns are labelled with the XML element
     # tag. Rows represent values for the variables for each run
-    df = pd.DataFrame(xx, columns=[ c[0] for c in ranges_list ])
+    df = pd.DataFrame(xx, columns=[c[0] for c in ranges_list])
     # This is a simple line to output the batch params
-    df.to_csv(os.path.join(mission_dir,'batch_params.csv'), index_label="run")
+    df.to_csv(os.path.join(mission_dir, 'batch_params.csv'), index_label="run")
     write_scenarios(df, cls_dict, mission_dir)
+
 
 def write_scenarios(df, cls_dict, mission_dir):
     # For each row in the df, replace all instances of key with the associated
@@ -141,12 +143,14 @@ def write_scenarios(df, cls_dict, mission_dir):
         out_params = os.path.join(mission_dir, str(index + 1)) + '_params.xml'
         row.to_csv(out_params)
 
+
 def replace_with_LHS_val(var, mission_string, val):
     # Replace var in the xml string with the value from LHS
     reg = r"\${{{}=(.+?)}}".format(var)
     pattern = re.compile(reg)
-    mission_string = pattern.sub(lambda m: m.group().replace(m.group(),
-        "'{}'".format(str(val))), mission_string)
+    mission_string = pattern.sub(
+            lambda m: m.group().replace(m.group(), "'{}'".format(str(val))),
+            mission_string)
     return mission_string
 
 
