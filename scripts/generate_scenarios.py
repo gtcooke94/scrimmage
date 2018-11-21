@@ -43,6 +43,8 @@ import sys
 import errno
 import shutil
 import scrimmage.utils as utils
+import re
+import pdb
 
 # If you get warnings about fc-list, remove font cache:
 # rm -rf ~/.cache/matplotlib/
@@ -91,92 +93,61 @@ def convert(value, type_):
     return (cls(value), cls)
 
 def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None):
-    if not entity_list:
-        entity_count = \
-            sum([1 for node in ET.parse(TEMP_MISSION_FILE).getroot()
-                 if node.tag == 'entity'])
-        entity_list = list(range(entity_count))
-
     root = ET.parse(ranges_file).getroot()
-
     num_of_vars = len(list(root))
-    xx = pyDOE.lhs(num_of_vars*len(entity_list), samples=int(num_runs))
-
+    xx = pyDOE.lhs(num_of_vars, samples=int(num_runs))
     # Build a list of tuples ('tag name', low, high)
     ranges_list = []
     cls_dict = {}
 
-    for idx, entity_num in enumerate(entity_list):
-        var_num = 0
-        for child in root:
 
-            try:
-                high, cls = convert(child.attrib['high'], child.attrib['type'])
-                low, cls = convert(child.attrib['low'], child.attrib['type'])
-            except (AttributeError, KeyError):
-                print('missing type or low or high in element ', child.tag)
+    for idx, child in enumerate(root):
+        try:
+            high, cls = convert(child.attrib['high'], child.attrib['type'])
+            low, cls = convert(child.attrib['low'], child.attrib['type'])
+        except (AttributeError, KeyError):
+            print('missing type or low or high in element ', child.tag)
 
-            column_name = child.tag+ "~" + str(entity_num) + "~"
+        column_name = child.tag
 
-            try:
-                column_name += child.attrib['attribute']
-            except (AttributeError, KeyError):
-                pass
+        cls_dict[column_name] = cls
+        ranges_list.append((column_name, high, low ))
 
-            cls_dict[column_name] = cls
-            ranges_list.append((column_name, high, low ))
-
-            xx[:,var_num+idx*num_of_vars] = [cls(scale_value(x, 0.0, 1.0, low, high)) for x in xx[:,var_num+idx*num_of_vars]]
-            var_num += 1
+        xx[:,idx] = [cls(scale_value(x, 0.0, 1.0, low, high)) for x in xx[:,idx]]
 
     # Build a data frame where the columns are labelled with the XML element
     # tag. Rows represent values for the variables for each run
     df = pd.DataFrame(xx, columns=[ c[0] for c in ranges_list ])
-    write_scenarios(df, cls_dict, mission_dir, entity_list)
+    # This is a simple line to output the batch params
+    df.to_csv(os.path.join(mission_dir,'batch_params.csv'), index_label="run")
+    write_scenarios(df, cls_dict, mission_dir)
 
-def write_scenarios(df, cls_dict, mission_dir, entity_list):
-
-    def updater(element, variable, index):
-        cls = cls_dict[variable] # get the conversion function
-        val = str(cls(df.loc[index,variable]))
-        node_name, ent_num, attr = variable.split("~")
-        if attr:
-            element.attrib[attr] = val
-        else:
-            element.text = val
-
-    #print df
-    variables = list(df.columns.values)
-    first_vars = [v.split('~')[0] for v in variables]
-
+def write_scenarios(df, cls_dict, mission_dir):
+    # For each row in the df, replace all instances of key with the associated
+    # value from LHS sampling
+    mission_string = ""
+    with open(TEMP_MISSION_FILE) as f:
+        mission_string = f.read()
     for index, row in df.iterrows():
-        tree = ET.parse(TEMP_MISSION_FILE)
-        root = tree.getroot()
-
-        # Find and loop over all "entity" tags in mission file.
-        entity_num = 0
-        for child in root:
-
-            try:
-                idx = first_vars.index(child.tag)
-                updater(child, variables[idx], index)
-            except ValueError:
-                pass
-
-            if child.tag != "entity":
-                continue
-
-            if entity_list and entity_num in entity_list or entity_list == [-1]:
-                for v in variables: # For every dataframe column name
-                    if v != "None": # Ignore the first column
-                        # Separate variable name from entity number:
-                        node_name, ent_num, attr = v.split("~")
-                        element = child.find(node_name) # Find the column name tag under the "entity" tag
-                        if element != None and element != "None" and (int(ent_num) == entity_num or int(ent_num) == -1):
-                            updater(element, v, index)
-            entity_num += 1
         out_name = os.path.join(mission_dir, str(index + 1)) + '.xml'
-        tree.write(out_name)
+        this_mission = mission_string
+        for var, cls in cls_dict.items():
+            this_mission = replace_with_LHS_val(var, this_mission, row[var])
+        # Output this mission file
+        out_name = os.path.join(mission_dir, str(index + 1)) + '.xml'
+        with open(out_name, "w") as out_file:
+            out_file.write(this_mission)
+
+        out_params = os.path.join(mission_dir, str(index + 1)) + '_params.xml'
+        row.to_csv(out_params)
+
+def replace_with_LHS_val(var, mission_string, val):
+    # Replace var in the xml string with the value from LHS
+    reg = r"\${{{}=(.+?)}}".format(var)
+    pattern = re.compile(reg)
+    mission_string = pattern.sub(lambda m: m.group().replace(m.group(),
+        "'{}'".format(str(val))), mission_string)
+    return mission_string
 
 
 def main():

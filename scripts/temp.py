@@ -17,7 +17,7 @@ def replace_with_vals():
     pdb.set_trace()
 
 
-def replace_with_default():
+def replace_with_default(xml_string):
 
     #  https://stackoverflow.com/questions/32670413/replace-all-matches-using-re-findall
     #  test = "ab${acde=5}fg${acde=6}"
@@ -36,19 +36,18 @@ def replace_with_default():
 
     params = ["MS_gain", "MS_gain2"]
     result = test_string
-    for param in params:
-        reg = r"\${.+?=(.+?)}"
-        pattern = re.compile(reg)
-        result = pattern.sub(lambda m: m.group().replace(m.group(0), m.group(1)), result)
-    pdb.set_trace()
+    result = xml_string
+    reg = r"\${.+?=(.+?)}"
+    pattern = re.compile(reg)
+    result = pattern.sub(lambda m: m.group().replace(m.group(0), m.group(1)), result)
 
 
 
 
 xml_string = ""
 with open('../missions/capture-the-flag-test.xml', 'r') as myfile:
-    xml_string = myfile.readlines()
+    xml_string = myfile.read()
 
 
-replace_with_default()
-replace_with_vals()
+replace_with_default(xml_string)
+#  replace_with_vals()
