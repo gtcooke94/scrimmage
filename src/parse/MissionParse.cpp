@@ -51,6 +51,8 @@
 #include <boost/filesystem.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
 
+#include <boost/regex.hpp>
+
 #include <rapidxml/rapidxml.hpp>
 
 using std::cout;
@@ -76,6 +78,13 @@ bool MissionParse::parse(const std::string &filename) {
     buffer << file.rdbuf();
     file.close();
     std::string content(buffer.str());
+
+    // Replace our xml variables in the form ${var=default} with the default
+    // value
+    std::string fmt{"\\1"};
+    boost::regex reg{"\\${.+?=(.+?)}"};
+    content = boost::regex_replace(content, reg, fmt);
+
     doc.parse<0>(&content[0]);
 
     rapidxml::xml_node<> *runscript_node = doc.first_node("runscript");
