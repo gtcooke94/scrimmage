@@ -50,6 +50,7 @@ import pdb
 # rm -rf ~/.cache/matplotlib/
 
 TEMP_MISSION_FILE = 'temp_mission.xml'
+TEMP_PARAMS_FILE = 'temp_params.xml'
 
 def rewrite_mission_file(mission_file, enable_gui):
     tree = ET.parse(mission_file)
@@ -152,6 +153,20 @@ def replace_with_LHS_val(var, mission_string, val):
             mission_string)
     return mission_string
 
+def from_run_experiments(args, out_dir, mission_dir):
+    # TODO: Can we incorporate this and main together? Or should
+    # generate_scenarios even be callable?
+    rewrite_mission_file(args.mission, False);
+    if os.path.isfile(args.ranges):
+        expand_variable_ranges(args.ranges, args.tasks, mission_dir)
+    else:
+        # If the user didn't supply a ranges file, just copy the temp mission
+        # file and rename it for each run
+        for i in range(0,args.num_runs):
+            shutil.copyfile(TEMP_MISSION_FILE, mission_dir+"/"+str(i+1)+".xml")
+    os.remove(TEMP_MISSION_FILE)
+
+
 
 def main():
     parser = argparse.ArgumentParser(description='Monte Carlo simulation for SCRIMMAGE.')
@@ -171,8 +186,6 @@ def main():
     add('--nodes', help="which nodes to run on")
 
     args = parser.parse_args()
-
-
     if not os.path.isfile(args.mission_file):
         themsg = 'Mission file ' + args.mission_file + ' not found!'
         print(themsg)
