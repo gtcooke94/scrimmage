@@ -161,13 +161,14 @@ def replace_with_LHS_val(var, mission_string, val):
 def from_run_experiments(args, out_dir, mission_dir):
     # TODO: Can we incorporate this and main together? Or should
     # generate_scenarios even be callable?
-    rewrite_mission_file(args.mission, False);
-    if os.path.isfile(args.ranges):
+    rewrite_mission_file(args.mission, False)
+    if args.ranges and os.path.isfile(args.ranges):
         expand_variable_ranges(args.ranges, args.tasks, mission_dir)
     else:
         # If the user didn't supply a ranges file, just copy the temp mission
         # file and rename it for each run
-        for i in range(0,args.num_runs):
+        # TODO: also parse the ${} variables here, or just let scrimmage do it?
+        for i in range(0, args.tasks):
             shutil.copyfile(TEMP_MISSION_FILE, mission_dir+"/"+str(i+1)+".xml")
     os.remove(TEMP_MISSION_FILE)
 
