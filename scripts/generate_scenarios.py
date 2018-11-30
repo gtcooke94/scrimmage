@@ -120,8 +120,12 @@ def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None)
     # Build a data frame where the columns are labelled with the XML element
     # tag. Rows represent values for the variables for each run
     df = pd.DataFrame(xx, columns=[c[0] for c in ranges_list])
+    # Add a column for run number - indexed from 1 to match everything else,
+    # set this as the index
+    df['run'] = [i for i in range(1, len(df) + 1)]
+    df.set_index('run', inplace=True)
     # This is a simple line to output the batch params
-    df.to_csv(os.path.join(mission_dir, 'batch_params.csv'), index_label="run")
+    df.to_csv(os.path.join(mission_dir, 'batch_params.csv'), index=True)
     write_scenarios(df, cls_dict, mission_dir)
 
 
@@ -131,16 +135,17 @@ def write_scenarios(df, cls_dict, mission_dir):
     mission_string = ""
     with open(TEMP_MISSION_FILE) as f:
         mission_string = f.read()
-    for index, row in df.iterrows():
+    for run, row in df.iterrows():
         this_mission = mission_string
+        #  pdb.set_trace()
         for var, cls in cls_dict.items():
             this_mission = replace_with_LHS_val(var, this_mission, row[var])
         # Output this mission file
-        out_name = os.path.join(mission_dir, str(index + 1)) + '.xml'
+        out_name = os.path.join(mission_dir, str(run)) + '.xml'
         with open(out_name, "w") as out_file:
             out_file.write(this_mission)
 
-        out_params = os.path.join(mission_dir, str(index + 1)) + '_params.xml'
+        out_params = os.path.join(mission_dir, str(run)) + '_params.xml'
         row.to_csv(out_params)
 
 

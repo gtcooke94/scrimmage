@@ -41,6 +41,8 @@ import argparse
 import argcomplete
 import generate_scenarios
 
+import pdb
+
 
 def call_scrimmage(arg):
     subprocess.call(arg, shell=True)
@@ -92,7 +94,7 @@ STARTTIME = datetime.datetime.now()
 
 # Make the pool of processors
 pool = multiprocessing.Pool(args.parallel)
-tasks = ['scrimmage -j 0 -t {0} {1} > {2}/{0}.log 2>&1'.format(i, ids_files[i],
+tasks = ['scrimmage -j 0 -t {0} {1} > {2}/{0}.log 2>&1'.format(i + 1, ids_files[i],
          LOG_FILE_DIR) for i in range(0, args.tasks)]
 # Map tasks to pools
 results = pool.map_async(call_scrimmage, tasks)
