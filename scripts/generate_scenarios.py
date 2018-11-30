@@ -52,13 +52,16 @@ import pdb
 TEMP_MISSION_FILE = 'temp_mission.xml'
 TEMP_PARAMS_FILE = 'temp_params.xml'
 
-def rewrite_mission_file(mission_file, enable_gui):
+def rewrite_mission_file(mission_file, enable_gui, root_log=None):
     tree = ET.parse(mission_file)
 
     root = tree.getroot()
 
     log_dir_element = root.find('log_dir')
-    log_dir_element.text = os.path.abspath(os.path.expanduser(log_dir_element.text))
+    if root_log:
+        log_dir_element.text = root_log
+    else:
+        log_dir_element.text = os.path.abspath(os.path.expanduser(log_dir_element.text))
 
     run_element = root.find('run')
     run_element.attrib['enable_gui'] = str(enable_gui)
@@ -94,7 +97,9 @@ def convert(value, type_):
     return (cls(value), cls)
 
 
-def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None):
+def expand_variable_ranges(ranges_file, num_runs, mission_dir, root_log=None, entity_list=None):
+    if not root_log:
+        root_log = mission_dir
     root = ET.parse(ranges_file).getroot()
     num_of_vars = len(list(root))
     xx = pyDOE.lhs(num_of_vars, samples=int(num_runs))
@@ -125,7 +130,7 @@ def expand_variable_ranges(ranges_file, num_runs, mission_dir, entity_list=None)
     df['run'] = [i for i in range(1, len(df) + 1)]
     df.set_index('run', inplace=True)
     # This is a simple line to output the batch params
-    df.to_csv(os.path.join(mission_dir, 'batch_params.csv'), index=True)
+    df.to_csv(os.path.join(root_log, 'batch_params.csv'), index=True)
     write_scenarios(df, cls_dict, mission_dir)
 
 
@@ -158,12 +163,12 @@ def replace_with_LHS_val(var, mission_string, val):
             mission_string)
     return mission_string
 
-def from_run_experiments(args, out_dir, mission_dir):
+def from_run_experiments(args, out_dir, mission_dir, root_log):
     # TODO: Can we incorporate this and main together? Or should
     # generate_scenarios even be callable?
-    rewrite_mission_file(args.mission, False)
+    rewrite_mission_file(args.mission, False, root_log)
     if args.ranges and os.path.isfile(args.ranges):
-        expand_variable_ranges(args.ranges, args.tasks, mission_dir)
+        expand_variable_ranges(args.ranges, args.tasks, mission_dir, root_log)
     else:
         # If the user didn't supply a ranges file, just copy the temp mission
         # file and rename it for each run
