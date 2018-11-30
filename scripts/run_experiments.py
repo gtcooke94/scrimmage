@@ -41,8 +41,6 @@ import argparse
 import argcomplete
 import generate_scenarios
 
-import pdb
-
 
 def call_scrimmage(arg):
     subprocess.call(arg, shell=True)
@@ -51,12 +49,12 @@ def call_scrimmage(arg):
 parser = argparse.ArgumentParser(description="Process arguments for batch "
                                  "scrimmage runs")
 parser.add_argument('-t', '--tasks', help='Number of simulation runs',
-        type=int)
+                    type=int)
 parser.add_argument('-m', '--mission', help='Mission file')
 parser.add_argument('-r', '--ranges', help='Ranges file for generating new'
                     ' scenarios')
 parser.add_argument('-p', '--parallel', help='Maximum number of parallel runs',
-        default=1, type=int)
+                    default=1, type=int)
 
 argcomplete.autocomplete(parser)
 args = parser.parse_args()
@@ -73,7 +71,7 @@ if args.parallel > multiprocessing.cpu_count():
 WARNING: MAX_PARALLEL_TASKS is set to {},
 but you only have {} processors.
 ====================================================================""".format(
-    args.parallel, multiprocessing.cpu_count()))
+          args.parallel, multiprocessing.cpu_count()))
 
 MISSION_FILE = args.mission
 ROOT_LOG = os.path.join(os.path.expanduser("~"), "swarm-log")
@@ -94,8 +92,8 @@ STARTTIME = datetime.datetime.now()
 
 # Make the pool of processors
 pool = multiprocessing.Pool(args.parallel)
-tasks = ['scrimmage -j 0 -t {0} {1} > {2}/{0}.log 2>&1'.format(i + 1, ids_files[i],
-         LOG_FILE_DIR) for i in range(0, args.tasks)]
+tasks = ['scrimmage -j 0 -t {0} {1} > {2}/{0}.log 2>&1'.format(i + 1,
+         ids_files[i], LOG_FILE_DIR) for i in range(0, args.tasks)]
 # Map tasks to pools
 results = pool.map_async(call_scrimmage, tasks)
 # Don't let anything else go to the pool and wait for everything in the pool to
@@ -105,30 +103,4 @@ pool.join()
 
 ENDTIME = datetime.datetime.now()
 print("Completed {} simulations in {} seconds".format(args.tasks, (ENDTIME -
-    STARTTIME).total_seconds()))
-
-
-
-
-
-
-#  1.) User creates mission file with $(param=value) variables.  (I forgot if
-#    we decided on $() or ${}).
-#  2.) User creates ranges.xml file that shows how to vary the $(param=value)
-#    parameters.
-#  3.) User calls run_experiment.py (note that is a new python script that you
-#    should write that is a combination of scrimmage_runner.sh,
-#    generate_scenarios.py, and your new python logic): $ ./run_experiment.py
-#    --tasks 100 --parallel 7 --name kevins_cool_experiment --ranges
-#    /path/to/ranges.xml /path/to/missions/straight-vs-motorschemas.xml
-#  4.) run_experiment.py creates the batch experiment directory,
-#    ~/.scrimmage/logs/2018-05-10_20-45-09-kevins_cool_experiment, the
-#    associated missions directory, the batch_params.csv file, and calls
-#    multiple scrimmage runs in parallel (I'm not sure if calling the command
-#    line program "parallel" is faster or slower or more cumbersome than using
-#    python's subprocess module). I think the subprocess module might be the
-#    cleanest even if its slightly slower.
-#  4.) run_experiment.py can perform any aggregation after all runs are
-#    complete to generate a final csv file.
-
-
+      STARTTIME).total_seconds()))
