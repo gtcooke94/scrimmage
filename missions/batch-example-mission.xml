@@ -99,7 +99,7 @@
     <controller>UnicyclePID</controller>
     <motion_model vel_max="30">Unicycle3D</motion_model>
 
-    <visual_model>submarine</visual_model>
+    <visual_model>zephyr-blue</visual_model>
   </entity>
 
   <entity>
@@ -118,7 +118,7 @@
     <y>1</y>
     <z>0</z>
     <heading>0</heading>
-    <visual_model>submarine</visual_model>
+    <visual_model>zephyr-blue</visual_model>
   </entity>
 
 </runscript>
