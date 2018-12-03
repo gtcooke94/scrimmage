@@ -183,7 +183,7 @@ the ``aggregate-runs`` program: ::
 
  $ aggregate-runs ~/.scrimmage/logs/{new_timestamped_folder}
 
-This should produce the following output: ::
+This should produce a terminal output that looks something like this ::
 
    Aggregating 100 runs. 
    [======================================================================] 100 %
@@ -192,8 +192,6 @@ This should produce the following output: ::
    Team ID         Wins            Draws           Total           
    2               100             0               100
 
-In this simplified example, it is clear that using collision avoidance is
-better for reducing mid-air collisions than not using collision avoidance.
 
 To see other inputs to ``run_experiments.py``, view its command line help with
 the ``-h`` flag.
@@ -258,10 +256,11 @@ mission file located at ``/path/to/scrimmage/missions/batch-example-mission.xml`
 
 In this example we can see that we have created two variables - max_speed and
 MS_gain. These variables are enclosed by braces and have a dollar sign at the
-beginning. You must provide also provide a  default value for the variables to
-the right of the equal sign. In this example, the default max_speed is 25, and
-the default gain is 1.0.
-Let's now take a look at the ranges file,
+beginning. You must also provide a  default value for the variables to the
+right of the equal sign. In this example, the default max_speed is 25, and the
+default gain is 1.0. Everything from the $ to the } will become that variables
+value, so be sure to enclose the expression in the proper quotations.  Let's
+now take a look at the ranges file,
 ``/path/to/scrimmage/missions/batch-ranges.xml``.
 
 .. code-block:: xml
