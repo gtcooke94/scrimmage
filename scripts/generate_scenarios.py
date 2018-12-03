@@ -172,7 +172,6 @@ def from_run_experiments(args, out_dir, mission_dir, root_log):
     else:
         # If the user didn't supply a ranges file, just copy the temp mission
         # file and rename it for each run
-        # TODO: also parse the ${} variables here, or just let scrimmage do it?
         for i in range(0, args.tasks):
             shutil.copyfile(TEMP_MISSION_FILE, mission_dir+"/"+str(i+1)+".xml")
     os.remove(TEMP_MISSION_FILE)
