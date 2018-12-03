@@ -77,6 +77,8 @@ if not os.path.isfile(args.mission):
 # See if the user is using the ranges file
 if not args.ranges:
     print('not using ranges file')
+elif not os.path.exists(args.ranges):
+    sys.exit('Ranges file does not exist... Exiting')
 
 if args.parallel > multiprocessing.cpu_count():
     print("""=================================================================
